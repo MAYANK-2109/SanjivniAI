@@ -23,8 +23,28 @@ export async function POST(req) {
   try {
     const { email, password, role } = await req.json();
 
-    if (!email || !role) {
-      return NextResponse.json({ success: false, error: 'Email and role are required.' }, { status: 400 });
+    const identifier = (email || '').trim();
+
+    if (!identifier || !role) {
+      return NextResponse.json({ success: false, error: 'Email/Phone and role are required.' }, { status: 400 });
+    }
+
+    // Format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[+\d][\d\s\-()]{7,15}$/;
+
+    if (!emailRegex.test(identifier) && !phoneRegex.test(identifier)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid format. Please provide a valid email address or phone number.' },
+        { status: 400 }
+      );
+    }
+
+    if (!password || password.length < 4) {
+      return NextResponse.json(
+        { success: false, error: 'Password must be at least 4 characters long.' },
+        { status: 400 }
+      );
     }
 
     let profile = null;
@@ -35,12 +55,14 @@ export async function POST(req) {
       if (db) {
         profile = await db.collection('profiles').findOne({
           role,
-          $or: [{ email: email.toLowerCase() }, { phone: email }],
+          $or: [{ email: identifier.toLowerCase() }, { phone: identifier }],
         });
 
-        // Verify password (in production, use bcrypt)
         if (profile && profile.password && profile.password !== password) {
-          profile = null; // wrong password
+          return NextResponse.json(
+            { success: false, error: 'Incorrect password for this account.' },
+            { status: 401 }
+          );
         }
       }
     } catch (dbErr) {
@@ -49,19 +71,31 @@ export async function POST(req) {
 
     // ── 2. Fallback to static demo profiles ──────────────────────────
     if (!profile) {
-      const staticProfile = INITIAL_PROFILES.find((p) => p.role === role);
+      // Find exact profile matching role AND email/phone
+      const staticProfile = INITIAL_PROFILES.find(
+        (p) =>
+          p.role === role &&
+          (p.email.toLowerCase() === identifier.toLowerCase() || p.phone === identifier)
+      );
+
       if (staticProfile) {
-        // In demo mode, accept any password or the demo password
-        const passwordOk = !password || password === staticProfile.password || password.length >= 4;
-        if (passwordOk) {
+        if (staticProfile.password === password) {
           profile = staticProfile;
+        } else {
+          return NextResponse.json(
+            { success: false, error: 'Incorrect password for this account.' },
+            { status: 401 }
+          );
         }
       }
     }
 
     if (!profile) {
       return NextResponse.json(
-        { success: false, error: 'Invalid credentials. Use any password with 4+ characters for the demo.' },
+        {
+          success: false,
+          error: `No ${role} account found matching "${identifier}". Please check your email/phone or register a new account.`,
+        },
         { status: 401 }
       );
     }

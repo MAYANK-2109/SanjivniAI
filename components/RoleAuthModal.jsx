@@ -93,12 +93,62 @@ export default function RoleAuthModal({ isOpen, onClose }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    const emailOrPhone = (form.email || '').trim();
+    const password = form.password || '';
+
+    // Validation 1: Email or Phone required
+    if (!emailOrPhone) {
+      setError('Please enter your Email Address or Phone Number.');
+      return;
+    }
+
+    // Validation 2: Email or Phone format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[+\d][\d\s\-()]{7,15}$/;
+
+    if (!emailRegex.test(emailOrPhone) && !phoneRegex.test(emailOrPhone)) {
+      setError('Invalid identifier format. Enter a valid email (e.g. name@domain.com) or phone number (e.g. +91 9876543210).');
+      return;
+    }
+
+    // Validation 3: Password minimum length
+    if (!password || password.length < 4) {
+      setError('Password must be at least 4 characters long.');
+      return;
+    }
+
+    // Registration specific validations
+    if (mode === 'register') {
+      if (form.confirm_pw !== undefined && password !== form.confirm_pw) {
+        setError('Password and Confirm Password do not match.');
+        return;
+      }
+
+      if (role === 'ambulance') {
+        if (!form.org_name?.trim() || !form.driver_name?.trim() || !form.vehicle_reg?.trim()) {
+          setError('Organization name, Driver name, and Vehicle registration number are required.');
+          return;
+        }
+      } else if (role === 'doctor') {
+        if (!form.full_name?.trim() || !form.med_reg?.trim() || !form.specialization?.trim()) {
+          setError('Full name, Medical Registration number, and Specialization are required.');
+          return;
+        }
+      } else if (role === 'hospital') {
+        if (!form.hospital_name?.trim() || !form.reg_no?.trim() || !form.city?.trim()) {
+          setError('Hospital name, Registration number, and City are required.');
+          return;
+        }
+      }
+    }
+
+    setLoading(true);
 
     try {
       const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
-      const payload  = { ...form, role };
+      const payload  = { ...form, email: emailOrPhone, role };
 
       const res  = await fetch(endpoint, {
         method:  'POST',

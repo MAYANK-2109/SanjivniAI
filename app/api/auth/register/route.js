@@ -26,17 +26,44 @@ export async function POST(req) {
     const body = await req.json();
     const { role, email, password, confirm_pw, ...rest } = body;
 
-    // ── Basic validation ──────────────────────────────────────────────
-    if (!role || !email) {
-      return NextResponse.json({ success: false, error: 'Role and email are required.' }, { status: 400 });
+    // ── Strict format & field validation ──────────────────────────────
+    const identifier = (email || '').trim();
+
+    if (!role || !identifier) {
+      return NextResponse.json({ success: false, error: 'Role and Email/Phone are required.' }, { status: 400 });
     }
 
-    if (password && confirm_pw && password !== confirm_pw) {
-      return NextResponse.json({ success: false, error: 'Passwords do not match.' }, { status: 400 });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[+\d][\d\s\-()]{7,15}$/;
+
+    if (!emailRegex.test(identifier) && !phoneRegex.test(identifier)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid Email/Phone format. Enter a valid email (e.g. user@domain.com) or phone number (e.g. +91 9876543210).' },
+        { status: 400 }
+      );
     }
 
-    if (password && password.length < 4) {
-      return NextResponse.json({ success: false, error: 'Password must be at least 4 characters.' }, { status: 400 });
+    if (!password || password.length < 4) {
+      return NextResponse.json({ success: false, error: 'Password must be at least 4 characters long.' }, { status: 400 });
+    }
+
+    if (confirm_pw !== undefined && password !== confirm_pw) {
+      return NextResponse.json({ success: false, error: 'Password and Confirm Password do not match.' }, { status: 400 });
+    }
+
+    // Role-specific required fields validation
+    if (role === 'ambulance') {
+      if (!rest.org_name?.trim() || !rest.driver_name?.trim() || !rest.vehicle_reg?.trim()) {
+        return NextResponse.json({ success: false, error: 'Organization name, Driver name, and Vehicle registration are required for Ambulance.' }, { status: 400 });
+      }
+    } else if (role === 'doctor') {
+      if (!rest.full_name?.trim() || !rest.med_reg?.trim() || !rest.specialization?.trim()) {
+        return NextResponse.json({ success: false, error: 'Full name, Medical Registration number, and Specialization are required for Doctor.' }, { status: 400 });
+      }
+    } else if (role === 'hospital') {
+      if (!rest.hospital_name?.trim() || !rest.reg_no?.trim() || !rest.city?.trim()) {
+        return NextResponse.json({ success: false, error: 'Hospital name, Registration number, and City are required for Hospital.' }, { status: 400 });
+      }
     }
 
     // Build profile name from role fields
