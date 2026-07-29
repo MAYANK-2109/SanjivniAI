@@ -75,40 +75,59 @@ const REGISTER_FIELDS = {
 
 export default function RoleAuthModal({ isOpen, onClose }) {
   const router = useRouter();
-  const [role, setRole]   = useState('ambulance');
-  const [mode, setMode]   = useState('login');   // 'login' | 'register'
-  const [form, setForm]   = useState({});
-  const [done, setDone]   = useState(false);
+  const [role, setRole]       = useState('ambulance');
+  const [mode, setMode]       = useState('login');   // 'login' | 'register'
+  const [form, setForm]       = useState({});
+  const [done, setDone]       = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(null);
 
   if (!isOpen) return null;
 
   const cfg = ROLES[role];
 
   function handleField(id, val) {
+    setError(null);
     setForm((p) => ({ ...p, [id]: val }));
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setDone(true);
-    try {
-      const res = await fetch('/api/auth/profiles');
-      const data = await res.json();
-      if (data.profiles) {
-        const profile = data.profiles.find(p => p.role === role);
-        if (profile) {
-          setStoredUser(profile);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to fetch profile", err);
-    }
+    setLoading(true);
+    setError(null);
 
-    setTimeout(() => {
-      setDone(false);
-      onClose();
-      router.push(`/dashboard/${role}`);
-    }, 1000);
+    try {
+      const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const payload  = { ...form, role };
+
+      const res  = await fetch(endpoint, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        setError(data.error || 'Something went wrong. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Persist the profile + token in localStorage
+      setStoredUser({ ...data.profile, token: data.token });
+      setDone(true);
+
+      setTimeout(() => {
+        setDone(false);
+        setLoading(false);
+        onClose();
+        router.push(`/dashboard/${role}`);
+      }, 1200);
+    } catch (err) {
+      console.error('Auth error:', err);
+      setError('Network error. Please check your connection and try again.');
+      setLoading(false);
+    }
   }
 
   return (
@@ -297,17 +316,33 @@ export default function RoleAuthModal({ isOpen, onClose }) {
                     </div>
                   )}
 
+                  {/* ── Error banner ── */}
+                  {error && (
+                    <div className="auth-error-banner">
+                      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                      </svg>
+                      {error}
+                    </div>
+                  )}
+
                   {/* ── Submit ── */}
                   <button
                     id={`${role}-auth-submit`}
                     type="submit"
+                    disabled={loading}
                     className="auth-submit-btn"
-                    style={{ background: cfg.accent, boxShadow: `0 4px 20px ${cfg.accent}40` }}
+                    style={{ background: cfg.accent, boxShadow: `0 4px 20px ${cfg.accent}40`, opacity: loading ? 0.7 : 1 }}
                   >
-                    {cfg.icon}
-                    {mode === 'login'
-                      ? `Sign in as ${cfg.label}`
-                      : `Register as ${cfg.label}`}
+                    {loading ? (
+                      <svg className="animate-spin" width="16" height="16" fill="none" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="4"/>
+                        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                      </svg>
+                    ) : cfg.icon}
+                    {loading
+                      ? (mode === 'login' ? 'Signing in…' : 'Creating account…')
+                      : (mode === 'login' ? `Sign in as ${cfg.label}` : `Register as ${cfg.label}`)}
                   </button>
 
                   <p className="auth-switch-text">
