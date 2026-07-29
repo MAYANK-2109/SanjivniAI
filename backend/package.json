@@ -4,6 +4,7 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
+    "build": "echo 'No build step required for Node backend'",
     "start": "node server.js",
     "dev": "node server.js"
   },
