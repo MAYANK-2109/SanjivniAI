@@ -189,7 +189,20 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
     };
   }, [step, activeRideId]);
 
-  const [rideStatus, setRideStatus] = useState('accepted');
+  // Driver status strings → patient-facing status
+  // Driver sends: 'accepted' | 'heading_to_patient' | 'arrived' | 'trip_started' | 'completed' | 'cancelled'
+  // Patient displays: heading | arrived | transporting | completed
+  function normaliseRideStatus(raw) {
+    if (!raw) return 'heading';
+    if (raw === 'heading_to_patient' || raw === 'accepted') return 'heading';
+    if (raw === 'arrived') return 'arrived';
+    if (raw === 'trip_started' || raw === 'transporting') return 'transporting';
+    if (raw === 'completed') return 'completed';
+    if (raw === 'cancelled') return 'cancelled';
+    return 'heading';
+  }
+
+  const [rideStatus, setRideStatus] = useState('heading');
 
   // ETA countdown and polling once EN_ROUTE
   useEffect(() => {
@@ -204,16 +217,17 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
         });
       }, 1000);
 
-      // Poll for ride status updates (e.g. arrived, transporting, completed)
       const pollStatus = async () => {
         try {
-          const res = await fetch(apiUrl(`/api/rides/status?id=${activeRideId}`));
+          const res  = await fetch(apiUrl(`/api/rides/status?id=${activeRideId}`));
           const data = await res.json();
           if (data.success && data.ride) {
-            setRideStatus(data.ride.status);
-            if (data.ride.status === 'completed') {
-              // Ride is done! Auto close after a bit
-              setTimeout(() => handleClose(), 4000);
+            const mapped = normaliseRideStatus(data.ride.status);
+            setRideStatus(mapped);
+            if (mapped === 'completed') setTimeout(() => handleClose(), 4000);
+            if (mapped === 'cancelled') {
+              setDriverDeclineReason('Driver cancelled the ride. Please try booking again.');
+              setTimeout(() => setStep('ENTER_LOCATION'), 3500);
             }
           }
         } catch (err) {
@@ -261,8 +275,24 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
     }
   }
 
-  function handleAccept() {
+  async function handleAccept() {
     setStep('EN_ROUTE');
+    setRideStatus('heading');
+    // Tell the server the patient confirmed — status becomes heading_to_patient
+    if (activeRideId) {
+      try {
+        await fetch(apiUrl('/api/rides/driver'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rideId: activeRideId,
+            driverId: driver?.driver_id || 'DRV-001',
+            action: 'update_status',
+            status: 'heading_to_patient',
+          }),
+        });
+      } catch {}
+    }
   }
 
   function handleDecline() {
@@ -595,14 +625,15 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                   className="p-5 flex flex-col gap-4"
                 >
-                  {/* Big ETA timer */}
+                  {/* Big ETA / status block */}
                   <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 p-5 text-center">
                     <p className="font-mono text-[11px] text-emerald-400 uppercase tracking-wider mb-2">
-                      {rideStatus === 'heading' || rideStatus === 'accepted' ? <><Ambulance size={14} className="inline mr-1" /> Ambulance En Route</> :
-                       rideStatus === 'arrived' ? <><MapPin size={14} className="inline mr-1" /> Ambulance Arrived</> :
-                       rideStatus === 'transporting' ? <><Zap size={14} className="inline mr-1" /> Transporting to ER</> : <><CheckCircle size={14} className="inline mr-1" /> Completed</>}
+                      {rideStatus === 'heading'      && <><Ambulance size={14} className="inline mr-1" /> Ambulance En Route</>}
+                      {rideStatus === 'arrived'      && <><MapPin size={14} className="inline mr-1" /> Ambulance Arrived</>}
+                      {rideStatus === 'transporting' && <><Zap size={14} className="inline mr-1" /> Transporting to ER</>}
+                      {rideStatus === 'completed'    && <><CheckCircle size={14} className="inline mr-1" /> Completed</>}
                     </p>
-                    {(rideStatus === 'heading' || rideStatus === 'accepted') ? (
+                    {rideStatus === 'heading' ? (
                       <>
                         <div className="font-display text-5xl font-black text-white mb-1">
                           {formatEta(etaSeconds)}
@@ -611,15 +642,15 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
                       </>
                     ) : (
                       <div className="font-display text-4xl font-black text-white mb-1 py-2">
-                        {rideStatus === 'arrived' ? 'Outside' :
-                         rideStatus === 'transporting' ? 'En Route ER' : 'Done'}
+                        {rideStatus === 'arrived'      ? 'Outside' :
+                         rideStatus === 'transporting' ? 'En Route ER' : 'Done ✓'}
                       </div>
                     )}
                     <div className="mt-3 flex items-center justify-center gap-2">
                       <Activity size={14} className="text-emerald-400 animate-pulse" />
                       <span className="font-mono text-[11px] text-emerald-400">
-                        {rideStatus === 'heading' || rideStatus === 'accepted' ? 'DRIVER IS ON THE WAY' :
-                         rideStatus === 'arrived' ? 'MEET DRIVER OUTSIDE' :
+                        {rideStatus === 'heading'      ? 'DRIVER IS ON THE WAY' :
+                         rideStatus === 'arrived'      ? 'MEET DRIVER OUTSIDE' :
                          rideStatus === 'transporting' ? 'MONITORING VITALS' : 'RIDE FINISHED'}
                       </span>
                     </div>
@@ -659,20 +690,29 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
 
                   {/* Actions */}
                   <div className="flex gap-3">
-                    <button
-                      onClick={handleClose}
-                      className="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-red-500/30 bg-red-950/30 py-2.5 font-display text-[12px] font-semibold text-red-400 hover:bg-red-900/40 transition-all"
-                    >
-                      <XCircle size={14} />
-                      Cancel Ride
-                    </button>
-                    <button
-                      onClick={() => window.open('https://www.google.com/maps/dir/?api=1', '_blank')}
+                    {rideStatus !== 'completed' && (
+                      <button
+                        onClick={handleClose}
+                        className="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-red-500/30 bg-red-950/30 py-2.5 font-display text-[12px] font-semibold text-red-400 hover:bg-red-900/40 transition-all"
+                      >
+                        <XCircle size={14} /> Cancel
+                      </button>
+                    )}
+                    <a
+                      href={
+                        pickupCoords
+                          ? `https://www.google.com/maps/dir/?api=1&origin=${pickupCoords.lat},${pickupCoords.lon}&destination=${destinationCoords?.lat ?? ''},${destinationCoords?.lon ?? ''}&travelmode=driving`
+                          : pickup
+                          ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pickup)}`
+                          : 'https://www.google.com/maps'
+                      }
+                      target="_blank"
+                      rel="noreferrer"
                       className="flex-[2] flex items-center justify-center gap-2 rounded-2xl bg-white/8 border border-white/10 py-2.5 font-display text-[13px] font-semibold text-white hover:bg-white/12 transition-all"
                     >
                       <Navigation size={14} className="text-cyan-400" />
                       Track on Map
-                    </button>
+                    </a>
                   </div>
 
                   {/* Emergency escalation */}
