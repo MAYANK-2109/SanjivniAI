@@ -85,11 +85,11 @@ export const getRideStatus = async (req, res) => {
   }
 };
 
-// ─── GET /api/rides/driver?lat=<>lng=<>&tier=<> ──────────────────────────────
-// Returns one PENDING ride within 10km of the driver. Real geospatial check.
+// ─── GET /api/rides/driver?lat=<>&lng=<>&tier=<>&driverId=<> ────────────────
+// Returns one PENDING ride within 10km that this driver has NOT declined.
 export const driverGetRide = async (req, res) => {
   try {
-    const { tier, lat, lng } = req.query;
+    const { tier, lat, lng, driverId } = req.query;
     const driverLat = parseFloat(lat);
     const driverLng = parseFloat(lng);
     const hasLocation = !isNaN(driverLat) && !isNaN(driverLng);
@@ -100,6 +100,8 @@ export const driverGetRide = async (req, res) => {
       if (db) {
         const query = { status: 'pending' };
         if (tier) query['tier.id'] = tier;
+        // Exclude rides this driver already declined
+        if (driverId) query['declinedBy'] = { $not: { $elemMatch: { $eq: driverId } } };
 
         const candidates = await db
           .collection('rides')
@@ -110,24 +112,14 @@ export const driverGetRide = async (req, res) => {
 
         let matchedRide = null;
         for (const ride of candidates) {
-          if (!hasLocation) {
-            // No driver location → accept any pending (demo fallback)
-            matchedRide = ride;
-            break;
-          }
+          if (!hasLocation) { matchedRide = ride; break; }
           const pLat = ride.patient?.lat;
           const pLng = ride.patient?.lng;
           if (pLat != null && pLng != null) {
             const dist = haversineKm(driverLat, driverLng, pLat, pLng);
-            console.log(`[rides/driver] dist to patient: ${dist.toFixed(2)}km`);
-            if (dist <= 10) {
-              matchedRide = { ...ride, _distanceKm: dist.toFixed(2) };
-              break;
-            }
+            if (dist <= 10) { matchedRide = { ...ride, _distanceKm: dist.toFixed(2) }; break; }
           } else {
-            // Patient has no coords stored (e.g. typed text address) → still show ride
-            matchedRide = ride;
-            break;
+            matchedRide = ride; break;
           }
         }
 
@@ -142,6 +134,7 @@ export const driverGetRide = async (req, res) => {
     for (const [, ride] of IN_MEMORY_RIDES) {
       if (ride.status !== 'pending') continue;
       if (tier && ride.tier?.id !== tier) continue;
+      if (driverId && (ride.declinedBy || []).includes(driverId)) continue; // skip if declined
       if (hasLocation && ride.patient?.lat != null && ride.patient?.lng != null) {
         const dist = haversineKm(driverLat, driverLng, ride.patient.lat, ride.patient.lng);
         if (dist > 10) continue;
@@ -187,7 +180,12 @@ export const driverUpdateRide = async (req, res) => {
       }
 
       if (action === 'decline') {
-        // Leave as pending so another driver can see it (or it times out)
+        // Add driverId to declinedBy — ride stays pending for other drivers
+        if (driverId) {
+          if (!ride.declinedBy) ride.declinedBy = [];
+          if (!ride.declinedBy.includes(driverId)) ride.declinedBy.push(driverId);
+          IN_MEMORY_RIDES.set(rideId, ride);
+        }
         return res.json({ success: true });
       }
 
@@ -225,6 +223,13 @@ export const driverUpdateRide = async (req, res) => {
           }
 
           if (action === 'decline') {
+            // Push driverId into declinedBy array — ride stays pending for others
+            if (driverId) {
+              await db.collection('rides').updateOne(
+                { _id: new ObjectId(rideId) },
+                { $addToSet: { declinedBy: driverId } }
+              );
+            }
             return res.json({ success: true });
           }
 

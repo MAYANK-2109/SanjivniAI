@@ -148,16 +148,21 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
   // Poll for ride status during FINDING_DRIVER
   useEffect(() => {
     let pollInterval;
+    let countdownInterval;
     if (step === 'FINDING_DRIVER' && activeRideId) {
-      setCountdown(45); // Max 45s wait
-      
+      setCountdown(90); // 90s for driver to accept
+
       const pollStatus = async () => {
         try {
-          const res = await fetch(apiUrl(`/api/rides/status?id=${activeRideId}`));
+          const res  = await fetch(apiUrl(`/api/rides/status?id=${activeRideId}`));
           const data = await res.json();
           if (data.success && data.ride) {
-            if (data.ride.status === 'accepted' && data.ride.driver) {
-              setDriver(data.ride.driver);
+            const ride = data.ride;
+            // ride.driver may be populated when driver accepts
+            if ((ride.status === 'accepted' || ride.status === 'heading_to_patient') && ride.driver) {
+              clearInterval(pollInterval);
+              clearInterval(countdownInterval);
+              setDriver(ride.driver);
               setStep('DRIVER_FOUND');
             }
           }
@@ -166,22 +171,25 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
         }
       };
 
-      // Poll every 3 seconds
       pollInterval = setInterval(pollStatus, 3000);
 
-      // Timeout countdown
-      timerRef.current = setInterval(() => {
+      countdownInterval = setInterval(() => {
         setCountdown(prev => {
           if (prev <= 1) {
             clearInterval(pollInterval);
-            clearInterval(timerRef.current);
-            setDriverDeclineReason('No ambulances accepted your request in time.');
-            setTimeout(() => setStep('SEARCHING'), 3000);
+            clearInterval(countdownInterval);
+            setDriverDeclineReason('No ambulances accepted your request in time. Please try again.');
+            setTimeout(() => {
+              setStep('ENTER_LOCATION');
+              setDriverDeclineReason(null);
+            }, 3000);
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
+
+      timerRef.current = countdownInterval;
     }
     return () => {
       clearInterval(pollInterval);

@@ -346,35 +346,77 @@ export default function DriverRideManager({ onActiveRideChange }) {
   const [lastCompletedId, setLastCompletedId] = useState(null);
   const [driverCoords, setDriverCoords]   = useState(null);
   const [locationStatus, setLocationStatus] = useState('requesting'); // 'requesting' | 'granted' | 'denied'
-  const pollRef = useRef(null);
+  // Refs so the poll callback reads latest values without being recreated
+  const activeRideRef      = useRef(null);
+  const incomingRideRef    = useRef(null);
+  const driverCoordsRef    = useRef(null);
+  const lastCompletedIdRef = useRef(null);
+  const declinedRideIds    = useRef(new Set()); // never show a declined ride again
 
-  // ── Request driver geolocation on mount ──────────────────────────────────────
+  // Keep refs in sync with state
+  useEffect(() => { activeRideRef.current   = activeRide;       }, [activeRide]);
+  useEffect(() => { incomingRideRef.current  = incomingRide;    }, [incomingRide]);
+  useEffect(() => { lastCompletedIdRef.current = lastCompletedId; }, [lastCompletedId]);
+
+  // GPS: update only the ref, not state, so the poll interval never recreates
+  // (state is set once on first fix, then only the ref tracks movement)
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setLocationStatus('denied');
-      return;
-    }
+    if (!navigator.geolocation) { setLocationStatus('denied'); return; }
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
-        setDriverCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        driverCoordsRef.current = coords;
+        // Only set state once (to show the GPS banner), not on every update
+        setDriverCoords(prev => prev ?? coords);
         setLocationStatus('granted');
       },
       () => setLocationStatus('denied'),
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+      { enableHighAccuracy: true, maximumAge: 30000, timeout: 15000 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
+  // ── Single stable poll interval — NEVER recreated ─────────────────────────────
+  useEffect(() => {
+    const tick = async () => {
+      // Skip if driver is already busy or has an incoming ride
+      if (activeRideRef.current || incomingRideRef.current) return;
+
+      try {
+        const coords = driverCoordsRef.current;
+        const params = new URLSearchParams();
+        params.set('driverId', DRIVER_PROFILE.driver_id); // server filters declinedBy this driver
+        if (coords) { params.set('lat', coords.lat); params.set('lng', coords.lng); }
+        const url = '/api/rides/driver?' + params.toString();
+
+        const res  = await fetch(apiUrl(url));
+        const data = await res.json();
+        if (data.success && data.ride) {
+          const rideId = typeof data.ride._id === 'object'
+            ? data.ride._id.toString()
+            : String(data.ride._id);
+          // Skip if already declined locally or completed
+          if (rideId === lastCompletedIdRef.current) return;
+          if (declinedRideIds.current.has(rideId)) return;
+          const normRide = { ...data.ride, _id: rideId };
+          setIncomingRide(prev => (prev?._id === rideId ? prev : normRide));
+        }
+      } catch (err) {
+        console.error('[DriverRideManager] poll error:', err);
+      }
+    };
+
+    const id = setInterval(tick, 5000); // poll every 5s, single stable interval
+    return () => clearInterval(id);
+  }, []); // empty deps — runs once, never recreated
+
   // ── Propagate active ride to parent dashboard ────────────────────────────────
   useEffect(() => {
     if (!onActiveRideChange) return;
-    if (!activeRide) {
-      onActiveRideChange(null);
-      return;
-    }
+    if (!activeRide) { onActiveRideChange(null); return; }
     onActiveRideChange({
       ...activeRide,
-      caseId:      activeRide._id ? `CAS-${activeRide._id.substring(18, 24).toUpperCase()}` : 'CAS-9921',
+      caseId:      activeRide._id ? `CAS-${String(activeRide._id).slice(-6).toUpperCase()}` : 'CAS-9921',
       patientName: activeRide.patient?.name || 'Unknown Patient',
       age: 45, gender: 'Male',
       condition:   activeRide.patient?.condition || 'Medical Emergency',
@@ -386,46 +428,25 @@ export default function DriverRideManager({ onActiveRideChange }) {
     });
   }, [activeRide, onActiveRideChange]);
 
-  // ── Poll for pending rides (only when idle) ───────────────────────────────────
-  const pollForRide = useCallback(async () => {
-    if (activeRide || incomingRide) return;
-    try {
-      let url = '/api/rides/driver';
-      if (driverCoords) url += `?lat=${driverCoords.lat}&lng=${driverCoords.lng}`;
-      const res  = await fetch(apiUrl(url));
-      const data = await res.json();
-      if (data.success && data.ride) {
-        if (data.ride._id === lastCompletedId) return;
-        // Don't re-show a ride we already have
-        setIncomingRide(prev => (prev?._id === data.ride._id ? prev : data.ride));
-      }
-    } catch (err) {
-      console.error('[DriverRideManager] poll error:', err);
-    }
-  }, [activeRide, incomingRide, driverCoords, lastCompletedId]);
-
-  useEffect(() => {
-    pollRef.current = setInterval(pollForRide, 4000);
-    return () => clearInterval(pollRef.current);
-  }, [pollForRide]);
-
   // ── Driver accepts the ride ───────────────────────────────────────────────────
   async function handleAccept() {
     if (!incomingRide) return;
+    const rideId = typeof incomingRide._id === 'object' ? incomingRide._id.toString() : String(incomingRide._id);
     try {
       const res = await fetch(apiUrl('/api/rides/driver'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          rideId:        incomingRide._id,
+          rideId,
           driverId:      DRIVER_PROFILE.driver_id,
-          driverProfile: DRIVER_PROFILE,   // embed full profile so patient gets it
+          driverProfile: DRIVER_PROFILE,
           action:        'accept',
         }),
       });
       const data = await res.json();
       if (data.success) {
-        setActiveRide(data.ride || incomingRide);
+        const ride = data.ride || incomingRide;
+        setActiveRide({ ...ride, _id: rideId });
       }
     } catch (err) {
       console.error('[DriverRideManager] accept error:', err);
@@ -436,14 +457,21 @@ export default function DriverRideManager({ onActiveRideChange }) {
   // ── Driver declines ───────────────────────────────────────────────────────────
   async function handleDecline(reason) {
     if (!incomingRide) return;
+    const rideId = typeof incomingRide._id === 'object' ? incomingRide._id.toString() : String(incomingRide._id);
+    // Mark locally immediately so the poll never shows it again
+    declinedRideIds.current.add(rideId);
+    setIncomingRide(null);
     try {
       await fetch(apiUrl('/api/rides/driver'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rideId: incomingRide._id, driverId: DRIVER_PROFILE.driver_id, action: 'decline' }),
+        body: JSON.stringify({
+          rideId,
+          driverId: DRIVER_PROFILE.driver_id,
+          action:   'decline',
+        }),
       });
     } catch {}
-    setIncomingRide(null);
   }
 
   // ── Status updates (arrived / trip_started / completed) ──────────────────────

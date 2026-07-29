@@ -118,14 +118,14 @@ export default function AmbulanceDashboard() {
   const [activeCall, setActiveCall] = useState(null);
   const [alertLog, setAlertLog] = useState([]);
   const [erAlertSent, setErAlertSent] = useState(false);
-  const [callStatus, setCallStatus] = useState('heading'); // heading | arrived | transporting | completed
+  const [callStatus, setCallStatus] = useState('heading_to_patient');
   const [mapKey, setMapKey] = useState(0);
 
   const STATUS_STEPS = [
-    { key: 'heading',     label: 'En Route to Patient',  icon: <Ambulance size={14} />, color: 'text-amber-400',   action: "Mark Arrived at Patient" },
-    { key: 'arrived',     label: 'At Patient Location',  icon: <MapPin size={14} />, color: 'text-blue-400',    action: 'Start Transport to Hospital' },
-    { key: 'transporting',label: 'Transporting to ER',   icon: <Zap size={14} />, color: 'text-red-400',     action: 'Mark Arrived at ER' },
-    { key: 'completed',   label: 'Case Completed',        icon: <CheckCircle2 size={14} />, color: 'text-emerald-400', action: null },
+    { key: 'heading_to_patient', label: 'En Route to Patient',  icon: <Ambulance size={14} />, color: 'text-amber-400',   action: 'Mark Arrived at Patient' },
+    { key: 'arrived',            label: 'At Patient Location',  icon: <MapPin size={14} />,    color: 'text-blue-400',    action: 'Start Transport to Hospital' },
+    { key: 'trip_started',       label: 'Transporting to ER',   icon: <Zap size={14} />,       color: 'text-red-400',     action: 'Mark Arrived at ER' },
+    { key: 'completed',          label: 'Case Completed',        icon: <CheckCircle2 size={14} />, color: 'text-emerald-400', action: null },
   ];
 
   const currentStep = STATUS_STEPS.find(s => s.key === callStatus) || STATUS_STEPS[0];
@@ -148,8 +148,8 @@ export default function AmbulanceDashboard() {
     setActiveCall(ride);
     if (ride && !activeCall) {
       addLog('New dispatch received — ride accepted', 'success');
-      setCallStatus('heading');
-      setMapKey(k => k + 1); // remount map for new ride
+      setCallStatus('heading_to_patient');
+      setMapKey(k => k + 1);
     }
     if (!ride && activeCall) {
       addLog('Dispatch cleared', 'info');
