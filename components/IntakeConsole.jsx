@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Siren, Mic } from 'lucide-react';
+import { Siren, Mic, Send } from 'lucide-react';
 
 const LANGUAGES = [
   { code: 'hi',  label: 'हिंदी',       name: 'Hindi' },
@@ -30,7 +30,15 @@ function detectLocalEmergency(text) {
   return EMERGENCY_WORDS.some((w) => lower.includes(w));
 }
 
-export default function IntakeConsole({ onSubmit, isProcessing }) {
+/**
+ * IntakeConsole — SINGLE unified input widget.
+ *
+ * Props:
+ *   onSubmit(inputs)  — called when user clicks "Run Triage"
+ *   onChat(text)      — called when user sends a quick message (Enter / send btn)
+ *   isProcessing      — boolean, disables triage submit while running
+ */
+export default function IntakeConsole({ onSubmit, onChat, isProcessing }) {
   const [narrative, setNarrative]           = useState('');
   const [language, setLanguage]             = useState('hi');
   const [isListening, setIsListening]       = useState(false);
@@ -38,6 +46,7 @@ export default function IntakeConsole({ onSubmit, isProcessing }) {
   const [biometrics, setBiometrics]         = useState({ spo2: '', bpm: '', bpSystolic: '', bpDiastolic: '', temperature: '' });
   const [emergencyFlash, setEmergencyFlash] = useState(false);
   const recognitionRef = useRef(null);
+  const textareaRef    = useRef(null);
 
   const isEmergency = detectLocalEmergency(narrative);
 
@@ -53,6 +62,24 @@ export default function IntakeConsole({ onSubmit, isProcessing }) {
     setBiometrics((p) => ({ ...p, [key]: val }));
   }
 
+  /** Quick-send as chat message on Enter (no Shift) */
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleQuickSend();
+    }
+  }
+
+  /** Send current text as a simple chat message, clear input */
+  function handleQuickSend() {
+    const text = narrative.trim();
+    if (!text) return;
+    if (onChat) onChat(text);
+    setNarrative('');
+    textareaRef.current?.focus();
+  }
+
+  /** Full triage submission */
   function handleSubmit(e) {
     e.preventDefault();
     if (!narrative.trim() || isProcessing) return;
@@ -70,6 +97,7 @@ export default function IntakeConsole({ onSubmit, isProcessing }) {
     const pick = pool[Math.floor(Math.random() * pool.length)];
     setNarrative(pick.text);
     setLanguage(pick.lang);
+    textareaRef.current?.focus();
   }
 
   function toggleVoice() {
@@ -91,7 +119,7 @@ export default function IntakeConsole({ onSubmit, isProcessing }) {
       for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
       handleNarrativeChange(t);
     };
-    rec.onend  = () => setIsListening(false);
+    rec.onend   = () => setIsListening(false);
     rec.onerror = () => setIsListening(false);
     recognitionRef.current = rec;
     rec.start();
@@ -110,9 +138,7 @@ export default function IntakeConsole({ onSubmit, isProcessing }) {
             initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             className="mb-3 flex items-center gap-2.5 rounded-xl border border-red-500/40 bg-red-950/60 px-3.5 py-2.5"
           >
-            <div className="shrink-0 text-red-400">
-              <Siren size={20} />
-            </div>
+            <div className="shrink-0 text-red-400"><Siren size={20} /></div>
             <div>
               <p className="font-display text-[12px] font-bold text-red-300">Emergency keyword detected</p>
               <p className="text-[11px] text-red-400/80">Triage will be auto-set to RED. Confirm narrative is correct.</p>
@@ -130,7 +156,7 @@ export default function IntakeConsole({ onSubmit, isProcessing }) {
             onClick={() => setLanguage(l.code)}
             className={`rounded-full border px-3 py-1 font-display text-[11px] font-semibold transition-all ${
               language === l.code
-                ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold'
+                ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
                 : 'border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-slate-700 dark:text-slate-400 hover:border-emerald-500/30 hover:text-emerald-600 dark:hover:text-emerald-400'
             }`}
           >
@@ -140,24 +166,40 @@ export default function IntakeConsole({ onSubmit, isProcessing }) {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        {/* Narrative textarea */}
+
+        {/* ── SINGLE unified input ── */}
         <div className="relative">
           <textarea
+            ref={textareaRef}
             id="narrative-input"
             value={narrative}
             onChange={(e) => handleNarrativeChange(e.target.value)}
-            placeholder="Bolein ya type karein... (e.g. Mere seene mein dard ho raha hai)"
+            onKeyDown={handleKeyDown}
+            placeholder="Type symptoms or a health question… (Enter to send, Shift+Enter for new line)"
             rows={3}
-            className={`w-full resize-none rounded-xl border px-4 py-3 font-mono text-[13px] font-medium leading-relaxed transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-0 ${
+            className={`w-full resize-none rounded-xl border px-4 py-3 pr-12 font-mono text-[13px] font-medium leading-relaxed transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-0 ${
               isEmergency
                 ? 'border-red-500/50 bg-red-50 dark:bg-red-950/30 text-red-950 dark:text-slate-100 focus:border-red-500'
                 : 'border-black/15 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-slate-100 focus:border-emerald-500 focus:bg-white dark:focus:bg-white/8 shadow-sm'
             }`}
           />
-          {!narrative && (
-            <span className="clinical-caret pointer-events-none absolute left-4 top-3.5 font-mono text-[13px]" />
-          )}
+          {/* Quick-send button (chat) */}
+          <button
+            type="button"
+            onClick={handleQuickSend}
+            disabled={!narrative.trim()}
+            title="Send as message (Enter)"
+            className="absolute right-2.5 bottom-2.5 flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500 text-white disabled:opacity-30 hover:bg-emerald-400 transition-colors"
+          >
+            <Send size={13} />
+          </button>
         </div>
+
+        {/* Help hint */}
+        <p className="text-[10.5px] text-slate-400 dark:text-slate-500 -mt-1">
+          Press <kbd className="rounded border border-black/10 dark:border-white/10 px-1 py-0.5 font-mono text-[10px]">Enter</kbd> to chat &nbsp;·&nbsp;
+          Click <strong>Run Triage</strong> for a full clinical assessment
+        </p>
 
         {/* Vitals toggle */}
         <button
@@ -179,11 +221,11 @@ export default function IntakeConsole({ onSubmit, isProcessing }) {
               className="grid grid-cols-3 gap-2 overflow-hidden"
             >
               {[
-                { key: 'spo2',        label: 'SpO₂ (%)',  placeholder: '97' },
+                { key: 'spo2',        label: 'SpO₂ (%)',   placeholder: '97' },
                 { key: 'bpm',         label: 'Heart Rate', placeholder: '78' },
-                { key: 'bpSystolic',  label: 'BP Sys',    placeholder: '120' },
-                { key: 'bpDiastolic', label: 'BP Dia',    placeholder: '80' },
-                { key: 'temperature', label: 'Temp °F',   placeholder: '98.6' },
+                { key: 'bpSystolic',  label: 'BP Sys',     placeholder: '120' },
+                { key: 'bpDiastolic', label: 'BP Dia',     placeholder: '80' },
+                { key: 'temperature', label: 'Temp °F',    placeholder: '98.6' },
               ].map(({ key, label, placeholder }) => (
                 <div key={key}>
                   <label className="mono-tag text-slate-600 dark:text-slate-500 block mb-1">{label}</label>
@@ -233,7 +275,7 @@ export default function IntakeConsole({ onSubmit, isProcessing }) {
             className={`ml-auto flex items-center gap-2 rounded-lg border px-5 py-2 font-display text-[13px] font-semibold text-white shadow-lg transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${
               isEmergency
                 ? 'border-red-500 bg-red-600 shadow-red-900/40 hover:bg-red-500'
-                : 'border-mint-500/70 bg-mint-600 shadow-mint-900/30 hover:bg-mint-500'
+                : 'border-emerald-600/70 bg-emerald-600 shadow-emerald-900/30 hover:bg-emerald-500'
             }`}
           >
             {isProcessing ? (

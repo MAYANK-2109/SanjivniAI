@@ -116,9 +116,8 @@ export default function HomePage() {
   const [authOpen, setAuthOpen]         = useState(false);
   const [theme, setTheme] = useState('dark'); // will sync from localStorage in effect
   const [chatMessages, setChatMessages] = useState([
-    { id: 1, from: 'ai', text: 'Hello! Describe your symptoms or ask a health question below.', time: '—' },
+    { id: 1, from: 'ai', text: 'Hello! Type your symptoms or a health question below. Press Enter to chat, or tap "Run Triage" for a full assessment.', time: '—' },
   ]);
-  const [chatInput, setChatInput] = useState('');
   const chatEndRef = useRef(null);
 
   // On mount: read saved theme from localStorage
@@ -139,20 +138,6 @@ export default function HomePage() {
     return new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   }
 
-  function handleChatSend(e) {
-    e.preventDefault();
-    const text = chatInput.trim();
-    if (!text) return;
-    setChatInput('');
-    setChatMessages(p => [...p, { id: Date.now(), from: 'user', text, time: getFormattedNow() }]);
-    setTimeout(() => {
-      setChatMessages(p => [...p, {
-        id: Date.now() + 1, from: 'ai',
-        text: 'Got it — fill the symptom form below and tap "Run Triage" for a clinical assessment. For emergencies call 112.',
-        time: getFormattedNow(),
-      }]);
-    }, 800);
-  }
 
   async function handleTriage(inputs) {
     setIsProcessing(true);
@@ -377,35 +362,22 @@ export default function HomePage() {
             <div ref={chatEndRef} className="h-4 shrink-0" />
           </div>
 
-          {/* Console bottom — single chat input + triage form */}
+          {/* Console bottom — single unified IntakeConsole */}
           <div className="console-bottom">
-
-            {/* ── Single Chat Input Bar ── */}
-            <form onSubmit={handleChatSend} className="chat-input-row">
-              <input
-                id="chat-input"
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Ask a health question…"
-                className="chat-input"
-                autoComplete="off"
-              />
-              <button
-                type="submit"
-                disabled={!chatInput.trim()}
-                className="chat-send-btn"
-                id="chat-send-btn"
-              >
-                <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                  <line x1="22" y1="2" x2="11" y2="13"/>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                </svg>
-              </button>
-            </form>
-
-            {/* ── Triage Form ── */}
-            <IntakeConsole onSubmit={handleTriage} isProcessing={isProcessing} />
+            <IntakeConsole
+              onSubmit={handleTriage}
+              isProcessing={isProcessing}
+              onChat={(text) => {
+                setChatMessages(p => [...p, { id: Date.now(), from: 'user', text, time: getFormattedNow() }]);
+                setTimeout(() => {
+                  setChatMessages(p => [...p, {
+                    id: Date.now() + 1, from: 'ai',
+                    text: 'Got it — describe your symptoms in detail and tap "Run Triage" for a full clinical assessment. For emergencies call 112.',
+                    time: getFormattedNow(),
+                  }]);
+                }, 700);
+              }}
+            />
           </div>
 
         </div>
