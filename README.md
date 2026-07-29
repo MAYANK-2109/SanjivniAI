@@ -53,8 +53,8 @@
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/nandishagarwal0660/SANJEEVANI.git
-    cd SANJEEVANI
+    git clone https://github.com/MAYANK-2109/SanjivniAI.git
+    cd SanjivniAI
     ```
 
 2.  **Install dependencies**
