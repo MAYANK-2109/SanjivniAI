@@ -4,11 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStoredUser, clearStoredUser } from '@/lib/auth';
-<<<<<<< Updated upstream
 import { CheckCircle2, AlertTriangle, CalendarCheck, Building2, Inbox, Calendar, Clock, Check, X } from 'lucide-react';
-=======
 import { getStoredTheme, applyTheme } from '@/lib/theme';
->>>>>>> Stashed changes
 
 function AppointmentModal({ onClose, hospitalId, hospitalName }) {
   const [form, setForm] = useState({
