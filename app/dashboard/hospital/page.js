@@ -172,7 +172,7 @@ export default function HospitalDashboard() {
 
   async function loadAppointments() {
     try {
-      const res = await fetch(apiUrl(`/api/appointments?role=hospital&targetId=${user?.id || ')'}`);
+      const res = await fetch(apiUrl(`/api/appointments?role=hospital&targetId=${user?.id || ''}`));
       const data = await res.json();
       if (data.success) setAppointments(data.appointments);
     } catch {}

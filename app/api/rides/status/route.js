@@ -10,6 +10,8 @@ import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { IN_MEMORY_RIDES, MOCK_DRIVERS } from '@/lib/mockData';
 
+export const dynamic = 'force-dynamic';
+
 function isObjectId(str) {
   return /^[a-f\d]{24}$/i.test(str);
 }

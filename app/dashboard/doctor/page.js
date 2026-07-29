@@ -158,7 +158,7 @@ export default function DoctorDashboard() {
   async function loadData() {
     try {
       // Load appointments for this doctor
-      const apptRes = await fetch(apiUrl(`/api/appointments?role=doctor&targetId=${user?.id || ')'}`);
+      const apptRes = await fetch(apiUrl(`/api/appointments?role=doctor&targetId=${user?.id || ''}`));
       const apptData = await apptRes.json();
       if (apptData.success) setAppointments(apptData.appointments);
     } catch {}
