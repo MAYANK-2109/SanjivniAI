@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStoredUser, clearStoredUser } from '@/lib/auth';
+import { CheckCircle2, AlertTriangle, CalendarCheck, Building2, Inbox, Calendar, Clock, Check, X } from 'lucide-react';
 
 function AppointmentModal({ onClose, hospitalId, hospitalName }) {
   const [form, setForm] = useState({
@@ -40,7 +41,7 @@ function AppointmentModal({ onClose, hospitalId, hospitalName }) {
         <div className="p-6">
           {done ? (
             <div className="text-center py-8">
-              <div className="text-5xl mb-4">✅</div>
+              <div className="flex justify-center mb-4 text-emerald-400"><CheckCircle2 size={48} /></div>
               <h3 className="font-bold text-lg text-slate-100">Appointment Submitted!</h3>
               <p className="text-slate-400 text-sm mt-1">Sent to {hospitalName}'s dashboard</p>
             </div>
@@ -59,7 +60,7 @@ function AppointmentModal({ onClose, hospitalId, hospitalName }) {
                   <input type="checkbox" checked={form.emergency} onChange={e => setForm(p=>({...p,emergency:e.target.checked}))}
                     className="accent-red-500 h-4 w-4" />
                   <div>
-                    <p className="text-sm font-semibold text-red-300">🚨 This is an Emergency</p>
+                    <p className="text-sm font-semibold text-red-300 flex items-center gap-1.5"><AlertTriangle size={16} /> This is an Emergency</p>
                     <p className="text-[11px] text-red-400/70">Mark for priority handling</p>
                   </div>
                 </label>
@@ -123,7 +124,7 @@ function AppointmentModal({ onClose, hospitalId, hospitalName }) {
                 </div>
                 <button type="submit" disabled={submitting}
                   className={`w-full py-3 rounded-xl font-semibold text-sm text-white transition-all shadow-lg ${form.emergency ? 'bg-red-600 hover:bg-red-500 shadow-red-900/30' : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/30'}`}>
-                  {submitting ? 'Submitting...' : form.emergency ? '🚨 Submit Emergency Request' : '📅 Book Appointment'}
+                  {submitting ? 'Submitting...' : form.emergency ? <><AlertTriangle size={14} className="inline mr-1" /> Submit Emergency Request</> : <><CalendarCheck size={14} className="inline mr-1" /> Book Appointment</>}
                 </button>
               </form>
             </>
@@ -226,7 +227,7 @@ export default function HospitalDashboard() {
       <header className="relative z-30 border-b border-white/8 bg-[#07080c]/90 backdrop-blur-xl sticky top-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="h-8 w-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-lg shrink-0">🏥</div>
+            <div className="h-8 w-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0 text-emerald-400"><Building2 size={18} /></div>
             <div className="hidden sm:block">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-sm text-slate-100">SANJEEVANI</span>
@@ -243,7 +244,7 @@ export default function HospitalDashboard() {
             {saveMsg && <span className="text-xs text-emerald-400 font-mono">{saveMsg}</span>}
             <button onClick={() => setShowBookModal(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all">
-              📅 Book Appointment
+              <CalendarCheck size={14} /> Book Appointment
             </button>
             <Link href="/" onClick={clearStoredUser}
               className="px-3 py-1.5 text-xs rounded-lg bg-white/5 hover:bg-red-500/15 border border-white/10 hover:border-red-500/30 text-slate-400 hover:text-red-300 transition-all">
@@ -347,7 +348,7 @@ export default function HospitalDashboard() {
               <div className="divide-y divide-white/5 max-h-96 overflow-y-auto">
                 {appointments.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-slate-600">
-                    <span className="text-3xl mb-2">📭</span>
+                    <Inbox size={36} className="mb-2 text-slate-500" />
                     <p className="text-sm">No appointments yet</p>
                   </div>
                 ) : (
@@ -357,12 +358,12 @@ export default function HospitalDashboard() {
                       <div key={appt._id?.toString()} onClick={() => setSelectedAppt(appt)}
                         className={`p-4 cursor-pointer hover:bg-white/4 transition-all ${isSelected ? 'bg-emerald-500/8 border-l-2 border-emerald-500' : ''} ${appt.emergency ? 'border-l-2 border-red-500' : ''}`}>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="font-semibold text-sm text-slate-100">{appt.patientName} {appt.emergency && <span className="text-red-400">🚨</span>}</span>
+                          <span className="font-semibold text-sm text-slate-100 flex items-center">{appt.patientName} {appt.emergency && <span className="text-red-400 ml-1"><AlertTriangle size={14} /></span>}</span>
                           <span className={`text-[10px] font-mono font-bold ${appt.status==='confirmed' ? 'text-emerald-400' : appt.status==='cancelled' ? 'text-red-400' : 'text-amber-400'}`}>{appt.status?.toUpperCase()}</span>
                         </div>
                         <p className="text-xs text-slate-400 mb-1">{appt.department} · {appt.reason?.substring(0,40)}...</p>
                         <div className="flex items-center gap-3 text-[10px] font-mono text-slate-500">
-                          <span>📅 {appt.date}</span><span>🕐 {appt.time}</span>
+                          <span><Calendar size={12} className="inline mr-1" /> {appt.date}</span><span><Clock size={12} className="inline mr-1" /> {appt.time}</span>
                         </div>
                       </div>
                     );
@@ -383,9 +384,9 @@ export default function HospitalDashboard() {
                   {selectedAppt.status === 'pending' && (
                     <div className="flex gap-2">
                       <button onClick={() => handleApptAction(selectedAppt._id?.toString(), 'confirmed')}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all">✓ Admit</button>
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all"><Check size={14} className="inline mr-1" /> Admit</button>
                       <button onClick={() => handleApptAction(selectedAppt._id?.toString(), 'cancelled')}
-                        className="px-3 py-1.5 rounded-lg bg-red-600/30 border border-red-500/40 text-red-300 hover:bg-red-600 hover:text-white text-xs font-semibold transition-all">✕ Decline</button>
+                        className="px-3 py-1.5 rounded-lg bg-red-600/30 border border-red-500/40 text-red-300 hover:bg-red-600 hover:text-white text-xs font-semibold transition-all"><X size={14} className="inline mr-1" /> Decline</button>
                     </div>
                   )}
                 </div>

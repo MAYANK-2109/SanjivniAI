@@ -44,7 +44,7 @@ export default function CarePathwayPanel({ result, isProcessing }) {
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
                 style={{ background: `${sev.color}20`, border: `1px solid ${sev.color}40` }}
               >
-                {sev.emoji}
+                <sev.icon size={24} />
               </div>
               <div>
                 <h3 className={`font-display text-[16px] font-bold ${sev.textStrong}`}>

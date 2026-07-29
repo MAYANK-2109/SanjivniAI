@@ -394,7 +394,7 @@ export default function HomePage() {
           </div>
         </a>
         <div className="sos-footer-right">
-          © 2024 SANJEEVANI AI TRIAGE | MEDGEMMA-27B<br />
+          &copy; 2024 SANJEEVANI AI TRIAGE | MEDGEMMA-27B<br />
           <span>Designed for Rural & Semi-Urban India</span>
         </div>
       </footer>

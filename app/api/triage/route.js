@@ -190,7 +190,7 @@ function getMockData(narrative, isEmergency) {
     Recommended_Action: 'Doctor Only',
     Required_Specialization: 'General Physician',
     Clinical_Reasoning: 'AI models are currently unavailable due to high traffic or connectivity issues.',
-    Patient_Communication: '⚠️ Warning: AI triage is currently unavailable. Please connect to available doctors from the options below for a live consultation.',
+    Patient_Communication: 'Warning: AI triage is currently unavailable. Please connect to available doctors from the options below for a live consultation.',
     Immediate_Actions: ['Connect with an available doctor below'],
     Red_Flags_Detected: [],
     Extracted_Symptoms: narrative.split(' ').slice(0, 3),

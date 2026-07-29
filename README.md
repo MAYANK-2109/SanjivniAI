@@ -16,22 +16,22 @@
   </p>
 </div>
 
-## ✨ Overview
+## Overview
 
 **Sanjivani** is a cutting-edge, comprehensive health triage platform designed to streamline patient intake, diagnosis, and emergency response. Leveraging the advanced reasoning capabilities of the **MedGemma 27B** AI model, Sanjivani provides clinical-grade triage recommendations, visualizes symptoms in 3D, and seamlessly connects patients with nearby healthcare facilities and emergency transport services.
 
-## 🚀 Key Features
+## Key Features
 
-*   **🧠 AI-Powered Intake Console**: Intelligently parses patient symptoms and medical history using MedGemma to provide real-time clinical insights.
-*   **🧍‍♂️ Interactive 3D Body Mapping**: Features a dynamic 3D human body model (built with Three.js) allowing patients to visually pinpoint and describe symptoms accurately.
-*   **📊 Clinical Acuity & Triage Results**: Automatically calculates an acuity score and generates a structured triage result, suggesting appropriate care pathways.
-*   **🏥 Healthcare Facility Locator**: Integrates location services to display nearby hospitals and clinics based on the user's location.
-*   **🚑 Emergency Ride Booking**: Comprehensive emergency ride management system, including patient booking modals, ambulance dispatch, and a dedicated dashboard for drivers.
-*   **👨‍⚕️ Intelligent Doctor Referrals**: Recommends specialized doctors based on the AI's triage assessment.
-*   **🔐 Role-Based Authentication**: Secure access control ensuring patients, doctors, and ambulance drivers have appropriate dashboard views and permissions.
-*   **🌍 Multilingual Support**: Accessible to a diverse user base with multilingual capabilities.
+*   **AI-Powered Intake Console**: Intelligently parses patient symptoms and medical history using MedGemma to provide real-time clinical insights.
+*   **Interactive 3D Body Mapping**: Features a dynamic 3D human body model (built with Three.js) allowing patients to visually pinpoint and describe symptoms accurately.
+*   **Clinical Acuity & Triage Results**: Automatically calculates an acuity score and generates a structured triage result, suggesting appropriate care pathways.
+*   **Healthcare Facility Locator**: Integrates location services to display nearby hospitals and clinics based on the user's location.
+*   **Emergency Ride Booking**: Comprehensive emergency ride management system, including patient booking modals, ambulance dispatch, and a dedicated dashboard for drivers.
+*   **Intelligent Doctor Referrals**: Recommends specialized doctors based on the AI's triage assessment.
+*   **Role-Based Authentication**: Secure access control ensuring patients, doctors, and ambulance drivers have appropriate dashboard views and permissions.
+*   **Multilingual Support**: Accessible to a diverse user base with multilingual capabilities.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 *   **Frontend**: [Next.js 14](https://nextjs.org/) (App Router), [React 18](https://react.dev/), [Tailwind CSS](https://tailwindcss.com/)
 *   **3D Rendering**: [Three.js](https://threejs.org/)
@@ -40,7 +40,7 @@
 *   **Backend & Database**: Next.js API Routes, [MongoDB](https://www.mongodb.com/)
 *   **AI Integration**: [@google/generative-ai](https://www.npmjs.com/package/@google/generative-ai), [@huggingface/inference](https://www.npmjs.com/package/@huggingface/inference)
 
-## ⚙️ Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -79,17 +79,17 @@
 5.  **Open the application**
     Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## 📁 Project Structure
+## Project Structure
 
 *   `/app`: Next.js 14 app router pages and API endpoints.
 *   `/components`: Reusable React components including UI elements, 3D models, and specialized panels.
 *   `/lib`: Utility functions, database connection helpers, and configuration files.
 *   `/scripts`: Additional scripts for database seeding or build steps.
 
-## 🤝 Contributing
+## Contributing
 
 Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/nandishagarwal0660/SANJEEVANI/issues).
 
-## 📄 License
+## License
 
 This project is private and intended for specific use cases. All rights reserved!

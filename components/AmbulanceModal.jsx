@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Ambulance, Phone, Bed, Shirt, XCircle, Users } from 'lucide-react';
 
 export default function AmbulanceModal({ isOpen, onClose, severityColor }) {
   // Close on Escape
@@ -36,7 +37,7 @@ export default function AmbulanceModal({ isOpen, onClose, severityColor }) {
               {/* Header */}
               <div className="mb-5 flex items-center gap-4">
                 <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-red-500 bg-red-950 sev-ring-red">
-                  <span className="text-3xl">🚑</span>
+                  <Ambulance size={28} className="text-red-400" />
                 </div>
                 <div>
                   <h2 className="font-display text-xl font-bold text-red-300">Emergency SOS</h2>
@@ -49,15 +50,15 @@ export default function AmbulanceModal({ isOpen, onClose, severityColor }) {
                 <p className="font-display text-[15px] font-semibold text-slate-100">Do this RIGHT NOW:</p>
                 <ul className="space-y-2 text-[13px] text-slate-300">
                   {[
-                    '📞 Call 112 (National Emergency) immediately',
-                    '🛏 Lie down flat — do not move unnecessarily',
-                    '🧥 Loosen tight clothing around chest/neck',
-                    '❌ Do not eat or drink anything',
-                    '👥 Send someone to wait outside for the ambulance',
+                    { text: 'Call 112 (National Emergency) immediately', icon: Phone },
+                    { text: 'Lie down flat — do not move unnecessarily', icon: Bed },
+                    { text: 'Loosen tight clothing around chest/neck', icon: Shirt },
+                    { text: 'Do not eat or drink anything', icon: XCircle },
+                    { text: 'Send someone to wait outside for the ambulance', icon: Users },
                   ].map((step, i) => (
                     <li key={i} className="flex items-start gap-2">
-                      <span className="mt-0.5 shrink-0 text-[16px]">{step.split(' ')[0]}</span>
-                      <span>{step.slice(step.indexOf(' ') + 1)}</span>
+                      <step.icon size={16} className="mt-0.5 shrink-0" />
+                      <span>{step.text}</span>
                     </li>
                   ))}
                 </ul>
@@ -70,14 +71,14 @@ export default function AmbulanceModal({ isOpen, onClose, severityColor }) {
                   id="call-112-btn"
                   className="flex items-center justify-center gap-3 rounded-xl border border-red-500 bg-red-600 py-3 font-display text-base font-bold text-white shadow-lg shadow-red-900/50 hover:bg-red-500 active:scale-95 transition-all"
                 >
-                  📞 Call 112 — National Emergency
+                  <Phone size={18} /> Call 112 — National Emergency
                 </a>
                 <a
                   href="tel:108"
                   id="call-108-btn"
                   className="flex items-center justify-center gap-3 rounded-xl border border-red-400/40 bg-red-950/40 py-2.5 font-display text-[14px] font-semibold text-red-300 hover:bg-red-900/40 active:scale-95 transition-all"
                 >
-                  🚑 Call 108 — Ambulance Service
+                  <Ambulance size={16} /> Call 108 — Ambulance Service
                 </a>
                 <button
                   onClick={onClose}

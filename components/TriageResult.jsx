@@ -44,7 +44,7 @@ export default function TriageResult({ result, isProcessing, onSOS, onFindCare, 
                 <div 
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 shadow-sm ${sev.bg}`}
                 >
-                  <span className="text-sm">{sev.emoji}</span>
+                  <sev.icon size={18} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-display text-[15px] font-bold leading-tight" style={{ color: sev.color }}>
