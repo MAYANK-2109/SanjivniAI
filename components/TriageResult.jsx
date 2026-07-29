@@ -73,9 +73,13 @@ export default function TriageResult({ result, isProcessing, onSOS, onFindCare, 
                 </div>
 
                 {/* Patient Communication */}
-                <div className="rounded-xl border border-white/5 bg-black/20 p-3 shadow-inner">
-                  <p className="font-mono text-[10px] text-slate-500 mb-1.5 uppercase tracking-wide">
-                    Clinical Advice ({result._source?.split('/')[1] || 'AI'})
+                <div className="rounded-xl border border-white/5 bg-black/20 p-4 shadow-inner relative">
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+                     <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+                     <span className="text-[9px] font-mono font-bold text-blue-400 uppercase tracking-wider">MedGemma 27B</span>
+                  </div>
+                  <p className="font-mono text-[10px] text-slate-500 mb-2 uppercase tracking-wide">
+                    Clinical Advice
                   </p>
                   <p className="text-[13.5px] leading-relaxed text-slate-200 font-medium whitespace-pre-wrap">
                     {result.Patient_Communication}

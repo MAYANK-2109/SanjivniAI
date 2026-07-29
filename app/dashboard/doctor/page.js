@@ -133,6 +133,7 @@ function AppointmentModal({ onClose, doctorId, doctorName }) {
 export default function DoctorDashboard() {
   const [user, setUser] = useState(null);
   const [appointments, setAppointments] = useState([]);
+  const [todaysAppointments, setTodaysAppointments] = useState([]);
   const [triageQueue, setTriageQueue] = useState([]);
   const [selectedAppt, setSelectedAppt] = useState(null);
   const [notes, setNotes] = useState('');
@@ -157,10 +158,15 @@ export default function DoctorDashboard() {
 
   async function loadData() {
     try {
-      // Load appointments for this doctor
       const apptRes = await fetch(apiUrl(`/api/appointments?role=doctor&targetId=${user?.id || ''}`));
       const apptData = await apptRes.json();
-      if (apptData.success) setAppointments(apptData.appointments);
+      if (apptData.success) {
+        const all = apptData.appointments;
+        setAppointments(all);
+        // Filter for today's date locally (from ISO date string)
+        const todayStr = new Date().toISOString().split('T')[0];
+        setTodaysAppointments(all.filter(a => a.date === todayStr));
+      }
     } catch {}
 
     try {
@@ -251,6 +257,30 @@ export default function DoctorDashboard() {
       </header>
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {/* Today's Appointments Banner */}
+        {todaysAppointments.length > 0 && (
+          <div className="mb-5 rounded-2xl border border-blue-500/25 bg-blue-500/8 p-4">
+            <p className="text-[11px] font-mono uppercase text-blue-400 tracking-widest mb-3 flex items-center gap-2">
+              <Calendar size={12} /> Today's Schedule — {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {todaysAppointments.map(a => (
+                <button
+                  key={a._id?.toString()}
+                  onClick={() => { setSelectedAppt(a); setNotes(a.doctorNotes || ''); setActiveTab('appointments'); }}
+                  className="flex items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-2 hover:bg-blue-500/20 transition-all text-left"
+                >
+                  <div className={`h-2 w-2 rounded-full flex-shrink-0 ${a.status === 'confirmed' ? 'bg-emerald-400' : a.status === 'cancelled' ? 'bg-red-400' : 'bg-amber-400'}`} />
+                  <div>
+                    <p className="text-[13px] font-semibold text-slate-100">{a.patientName}</p>
+                    <p className="text-[11px] text-blue-400 font-mono">{a.time}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           {[

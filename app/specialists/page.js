@@ -1,17 +1,17 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Stethoscope, Star, MapPin, Phone, Calendar,
   Clock, CheckCircle, XCircle, Search, Filter
 } from 'lucide-react';
 import { getDoctorsBySpec, ALL_DOCTORS } from '@/lib/doctors';
+import BookSlotModal from '@/components/BookSlotModal';
 
 /* ── Doctor Card ─────────────────────────────────────── */
-function DoctorCard({ doc, index }) {
+function DoctorCard({ doc, index, onBookSlot }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -84,6 +84,7 @@ function DoctorCard({ doc, index }) {
             <Phone size={14} /> Call
           </a>
           <button
+            onClick={() => onBookSlot(doc)}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 py-2.5 font-display text-[12px] font-bold text-white hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-900/30"
           >
             <Calendar size={14} /> Book Slot
@@ -103,6 +104,7 @@ function SpecialistsContent() {
   const [search, setSearch] = useState('');
   const [filterSpec, setFilterSpec] = useState(specParam);
   const [doctors, setDoctors] = useState([]);
+  const [bookingDoctor, setBookingDoctor] = useState(null);
 
   // Unique specializations for the filter bar
   const allSpecs = [...new Set(ALL_DOCTORS.map((d) => d.spec))];
@@ -210,7 +212,7 @@ function SpecialistsContent() {
         {doctors.length > 0 ? (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {doctors.map((doc, i) => (
-              <DoctorCard key={doc.id} doc={doc} index={i} />
+              <DoctorCard key={doc.id} doc={doc} index={i} onBookSlot={setBookingDoctor} />
             ))}
           </div>
         ) : (
@@ -227,6 +229,13 @@ function SpecialistsContent() {
           </div>
         )}
       </main>
+
+      {/* Book Slot Modal */}
+      <AnimatePresence>
+        {bookingDoctor && (
+          <BookSlotModal doctor={bookingDoctor} onClose={() => setBookingDoctor(null)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
