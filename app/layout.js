@@ -28,9 +28,9 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="bg-obsidian" data-theme='dark'>
+    <html lang="en" data-theme='light'>
       <body
-        className={`${inter.variable} ${plusJakarta.variable} font-body text-slate-100 antialiased min-h-screen bg-obsidian`}
+        className={`${inter.variable} ${plusJakarta.variable} font-body antialiased min-h-screen`}
       >
         {children}
       </body>

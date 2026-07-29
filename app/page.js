@@ -187,9 +187,9 @@ export default function HomePage() {
         {/* Right nav actions */}
         <div className="nav-actions">
           {/* Live badge */}
-          <div className="live-badge">
+          <div className="live-badge nav-live-badge">
             <span className="live-dot" />
-            MEDGEMMA-27B · LIVE
+            MEDGEMMA · LIVE
           </div>
           {/* Theme */}
           <button onClick={() => setTheme(isDark ? 'light' : 'dark')} className="icon-btn" title="Toggle theme">
@@ -198,15 +198,15 @@ export default function HomePage() {
           {/* SOS */}
           <a href="tel:112" className="sos-btn">
             <Phone size={14} />
-            SOS
+            <span className="sos-label">SOS</span>
           </a>
           {/* Book Ambulance */}
-          <button onClick={() => setBookAmbulanceOpen(true)} className="login-btn !bg-red-500/10 !text-red-500 !border-red-500/30 hover:!bg-red-500/20">
-            <Ambulance size={15} /> Book Ambulance
+          <button onClick={() => setBookAmbulanceOpen(true)} className="login-btn book-amb-btn !bg-red-500/10 !text-red-500 !border-red-500/30 hover:!bg-red-500/20">
+            <Ambulance size={15} /> <span className="nav-btn-label">Book Ambulance</span>
           </button>
           {/* Login */}
           <button onClick={() => setAuthOpen(true)} className="login-btn">
-            <User size={15} /> Login
+            <User size={15} /> <span className="nav-btn-label">Login</span>
           </button>
         </div>
       </header>
@@ -357,26 +357,15 @@ export default function HomePage() {
             <div ref={chatEndRef} className="h-4 shrink-0" />
           </div>
 
-          {/* Console bottom — chat input + triage form */}
+          {/* Console bottom — triage form only (chat is unified in IntakeConsole) */}
           <div className="console-bottom">
-            {/* Chat input row */}
-            <form onSubmit={sendChatMessage} className="chat-input-row">
-              <input
-                id="chat-comment-input"
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Ask a health question or comment..."
-                className="chat-input"
-              />
-              <button type="submit" disabled={!chatInput.trim()} className="chat-send-btn" id="chat-send-btn">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                  <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                </svg>
-              </button>
-            </form>
             {/* Triage form (language pills + narrative + run triage) */}
-            <IntakeConsole onSubmit={handleTriage} isProcessing={isProcessing} />
+            <IntakeConsole onSubmit={handleTriage} isProcessing={isProcessing} chatMessages={chatMessages} onSendChat={(text) => {
+              setChatMessages(p => [...p, { id: Date.now(), from: 'user', text, time: getFormattedNow() }]);
+              setTimeout(() => {
+                setChatMessages(p => [...p, { id: Date.now() + 1, from: 'ai', text: 'Fill the triage form and tap "Run Triage". For emergencies, call 112.', time: getFormattedNow() }]);
+              }, 900);
+            }} />
           </div>
 
         </div>

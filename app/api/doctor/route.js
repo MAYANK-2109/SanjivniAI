@@ -1,6 +1,11 @@
+/**
+ * app/api/doctor/route.js
+ * Doctor dashboard API — returns patient queue for the doctor role.
+ * Falls back to INITIAL_PATIENTS from lib/mockData when MongoDB is unavailable.
+ */
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
-import { INITIAL_PATIENTS } from '../seed/route';
+import { INITIAL_PATIENTS } from '@/lib/mockData';
 
 export async function GET() {
   try {
@@ -11,13 +16,15 @@ export async function GET() {
 
     const patients = await db.collection('patients').find({}).toArray();
     if (patients.length === 0) {
+      // Seed on first access if empty
       await db.collection('patients').insertMany(INITIAL_PATIENTS);
-      return NextResponse.json({ success: true, patients: INITIAL_PATIENTS, source: 'mongodb' });
+      return NextResponse.json({ success: true, patients: INITIAL_PATIENTS, source: 'mongodb_seeded' });
     }
 
     return NextResponse.json({ success: true, patients, source: 'mongodb' });
   } catch (error) {
     console.error('Doctor API GET Error:', error);
+    // Always fall back to mock data — never return an empty error state
     return NextResponse.json({ success: true, patients: INITIAL_PATIENTS, source: 'mock', error: error.message });
   }
 }
@@ -29,7 +36,7 @@ export async function POST(req) {
 
     const db = await getDatabase();
     if (!db) {
-      return NextResponse.json({ success: true, message: 'Notes saved locally (No Mongo URI set)', data: body });
+      return NextResponse.json({ success: true, message: 'Notes saved locally (MongoDB not configured)', data: body });
     }
 
     const updateFields = { updatedAt: new Date() };
