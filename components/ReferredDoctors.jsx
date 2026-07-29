@@ -1,4 +1,5 @@
 'use client';
+import { apiUrl } from '@/lib/apiClient';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -15,7 +16,7 @@ function QuickBookModal({ doctor, onClose }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch('/api/appointments', {
+      const res = await fetch(apiUrl('/api/appointments'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, doctorId: doctor.id, doctorName: doctor.name, role: 'doctor' }),
@@ -95,7 +96,7 @@ export default function ReferredDoctors({ specialization }) {
     const fetchDoctors = async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/doctors', {
+        const res = await fetch(apiUrl('/api/doctors'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ specialization })

@@ -1,14 +1,12 @@
 'use client';
+import { apiUrl } from '@/lib/apiClient';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStoredUser, clearStoredUser } from '@/lib/auth';
-<<<<<<< Updated upstream
 import { CheckCircle2, CalendarCheck, Stethoscope, AlertTriangle, Inbox, Calendar, Clock, Phone, Check, X, Save, MousePointerClick } from 'lucide-react';
-=======
 import { getStoredTheme, applyTheme } from '@/lib/theme';
->>>>>>> Stashed changes
 
 const SEV = {
   RED:    { bg: 'bg-red-500/15',     border: 'border-red-500/40',    text: 'text-red-400',    dot: 'bg-red-500'    },
@@ -32,7 +30,7 @@ function AppointmentModal({ onClose, doctorId, doctorName }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await fetch('/api/appointments', {
+      await fetch(apiUrl('/api/appointments'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, doctorId, doctorName, role: 'doctor' }),
@@ -160,14 +158,14 @@ export default function DoctorDashboard() {
   async function loadData() {
     try {
       // Load appointments for this doctor
-      const apptRes = await fetch(`/api/appointments?role=doctor&targetId=${user?.id || ''}`);
+      const apptRes = await fetch(apiUrl(`/api/appointments?role=doctor&targetId=${user?.id || ')'}`);
       const apptData = await apptRes.json();
       if (apptData.success) setAppointments(apptData.appointments);
     } catch {}
 
     try {
       // Load triage queue
-      const triRes = await fetch('/api/triage/history');
+      const triRes = await fetch(apiUrl('/api/triage/history'));
       const triData = await triRes.json();
       if (triData.success && triData.history) {
         setTriageQueue(triData.history.map(d => ({
@@ -187,7 +185,7 @@ export default function DoctorDashboard() {
 
   async function handleApptAction(id, status) {
     try {
-      await fetch('/api/appointments', {
+      await fetch(apiUrl('/api/appointments'), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status }),
@@ -202,7 +200,7 @@ export default function DoctorDashboard() {
   async function handleSaveNotes() {
     if (!selectedAppt) return;
     try {
-      await fetch('/api/appointments', {
+      await fetch(apiUrl('/api/appointments'), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: selectedAppt._id, status: selectedAppt.status, doctorNotes: notes }),

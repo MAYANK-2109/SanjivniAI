@@ -1,4 +1,5 @@
 'use client';
+import { apiUrl } from '@/lib/apiClient';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -23,7 +24,7 @@ function AppointmentModal({ onClose, hospitalId, hospitalName }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await fetch('/api/appointments', {
+      await fetch(apiUrl('/api/appointments'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, hospitalId, hospitalName, role: 'hospital' }),
@@ -171,7 +172,7 @@ export default function HospitalDashboard() {
 
   async function loadAppointments() {
     try {
-      const res = await fetch(`/api/appointments?role=hospital&targetId=${user?.id || ''}`);
+      const res = await fetch(apiUrl(`/api/appointments?role=hospital&targetId=${user?.id || ')'}`);
       const data = await res.json();
       if (data.success) setAppointments(data.appointments);
     } catch {}
@@ -179,7 +180,7 @@ export default function HospitalDashboard() {
 
   async function loadCapacity() {
     try {
-      const res = await fetch('/api/hospital');
+      const res = await fetch(apiUrl('/api/hospital'));
       const data = await res.json();
       if (data.success && data.hospital?.capacity) setCapacity(data.hospital.capacity);
       if (data.success && data.hospital?.erStatus) setErStatus(data.hospital.erStatus);
@@ -192,7 +193,7 @@ export default function HospitalDashboard() {
     const updated = { ...capacity, [key]: newVal };
     setCapacity(updated);
     try {
-      await fetch('/api/hospital', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({capacity:updated, erStatus}) });
+      await fetch(apiUrl('/api/hospital'), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({capacity:updated, erStatus}) });
       setSaveMsg('Synced ✓'); setTimeout(()=>setSaveMsg(''), 2000);
     } catch {}
   }
@@ -200,13 +201,13 @@ export default function HospitalDashboard() {
   async function handleErStatus(status) {
     setErStatus(status);
     try {
-      await fetch('/api/hospital', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({capacity, erStatus:status}) });
+      await fetch(apiUrl('/api/hospital'), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({capacity, erStatus:status}) });
     } catch {}
   }
 
   async function handleApptAction(id, status) {
     try {
-      await fetch('/api/appointments', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id,status}) });
+      await fetch(apiUrl('/api/appointments'), { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id,status}) });
       setAppointments(prev => prev.map(a => a._id?.toString()===id ? {...a,status} : a));
       if (selectedAppt?._id?.toString() === id) setSelectedAppt(prev=>({...prev,status}));
     } catch {}

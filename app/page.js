@@ -1,4 +1,5 @@
 'use client';
+import { apiUrl } from '@/lib/apiClient';
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -146,7 +147,7 @@ export default function HomePage() {
     setShowTelehealth(false);
     setChatMessages(p => [...p, { id: Date.now(), from: 'user', text: inputs.narrative.slice(0, 100) + (inputs.narrative.length > 100 ? '…' : ''), time: getFormattedNow() }]);
     try {
-      const res = await fetch('/api/triage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...inputs, bodyRegion }) });
+      const res = await fetch(apiUrl('/api/triage'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...inputs, bodyRegion }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Triage failed');
       setResult(data);

@@ -5,6 +5,8 @@
   "description": "Sanjivani — clinical-grade multilingual health triage system powered by MedGemma 27B",
   "scripts": {
     "dev": "next dev",
+    "dev:backend": "node backend/server.js",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:backend\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -23,6 +25,7 @@
   },
   "devDependencies": {
     "autoprefixer": "10.4.19",
+    "concurrently": "^10.0.4",
     "postcss": "8.4.39",
     "tailwindcss": "3.4.6"
   }

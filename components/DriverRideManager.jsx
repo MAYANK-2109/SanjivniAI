@@ -1,4 +1,5 @@
 'use client';
+import { apiUrl } from '@/lib/apiClient';
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -260,7 +261,7 @@ export default function DriverRideManager({ onActiveRideChange }) {
     if (!activeRide && !incomingRide) {
       const pollDB = async () => {
         try {
-          const res = await fetch('/api/rides/driver?tier=als'); // Just hardcoding ALS tier for demo driver
+          const res = await fetch(apiUrl('/api/rides/driver?tier=als')); // Just hardcoding ALS tier for demo driver
           const data = await res.json();
           if (data.success && data.ride) {
              if (data.ride._id === lastCompletedId) return;
@@ -277,7 +278,7 @@ export default function DriverRideManager({ onActiveRideChange }) {
 
   async function handleAccept() {
     try {
-      const res = await fetch('/api/rides/driver', {
+      const res = await fetch(apiUrl('/api/rides/driver'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rideId: incomingRide._id, driverId: 'amb-1', action: 'accept' })
@@ -294,7 +295,7 @@ export default function DriverRideManager({ onActiveRideChange }) {
 
   async function handleDecline(reason) {
     try {
-      await fetch('/api/rides/driver', {
+      await fetch(apiUrl('/api/rides/driver'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rideId: incomingRide._id, driverId: 'amb-1', action: 'decline' })

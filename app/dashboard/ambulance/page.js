@@ -1,4 +1,5 @@
 'use client';
+import { apiUrl } from '@/lib/apiClient';
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -164,7 +165,7 @@ export default function AmbulanceDashboard() {
 
     if (activeCall?._id) {
       try {
-        await fetch('/api/rides/driver', {
+        await fetch(apiUrl('/api/rides/driver'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -190,7 +191,7 @@ export default function AmbulanceDashboard() {
     addLog('🔔 Pre-arrival trauma alert sent to ER', 'warn');
     if (activeCall?._id) {
       try {
-        await fetch('/api/ambulance', {
+        await fetch(apiUrl('/api/ambulance'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ rideId: activeCall._id, erNotified: true }),

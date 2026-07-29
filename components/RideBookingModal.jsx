@@ -1,4 +1,5 @@
 'use client';
+import { apiUrl } from '@/lib/apiClient';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -100,7 +101,7 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
       
       const pollStatus = async () => {
         try {
-          const res = await fetch(`/api/rides/status?id=${activeRideId}`);
+          const res = await fetch(apiUrl(`/api/rides/status?id=${activeRideId}`));
           const data = await res.json();
           if (data.success && data.ride) {
             if (data.ride.status === 'accepted' && data.ride.driver) {
@@ -154,7 +155,7 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
       // Poll for ride status updates (e.g. arrived, transporting, completed)
       const pollStatus = async () => {
         try {
-          const res = await fetch(`/api/rides/status?id=${activeRideId}`);
+          const res = await fetch(apiUrl(`/api/rides/status?id=${activeRideId}`));
           const data = await res.json();
           if (data.success && data.ride) {
             setRideStatus(data.ride.status);
@@ -182,7 +183,7 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
     
     // Create the real ride request in MongoDB
     try {
-      const res = await fetch('/api/rides/request', {
+      const res = await fetch(apiUrl('/api/rides/request'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

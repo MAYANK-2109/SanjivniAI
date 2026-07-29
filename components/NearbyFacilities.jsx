@@ -1,4 +1,5 @@
 'use client';
+import { apiUrl } from '@/lib/apiClient';
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,7 +33,7 @@ export default function NearbyFacilities({ facilityType = 'hospital', trigger })
 
   async function fetchFacilities(lat, lng) {
     try {
-      const res = await fetch('/api/nearby-care', {
+      const res = await fetch(apiUrl('/api/nearby-care'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lat: lat ?? 28.6139, lng: lng ?? 77.2090, facility_type: facilityType }),
