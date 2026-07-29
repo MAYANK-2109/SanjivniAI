@@ -4,7 +4,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStoredUser, clearStoredUser } from '@/lib/auth';
+<<<<<<< Updated upstream
 import { CheckCircle2, CalendarCheck, Stethoscope, AlertTriangle, Inbox, Calendar, Clock, Phone, Check, X, Save, MousePointerClick } from 'lucide-react';
+=======
+import { getStoredTheme, applyTheme } from '@/lib/theme';
+>>>>>>> Stashed changes
 
 const SEV = {
   RED:    { bg: 'bg-red-500/15',     border: 'border-red-500/40',    text: 'text-red-400',    dot: 'bg-red-500'    },
@@ -139,6 +143,8 @@ export default function DoctorDashboard() {
   const [activeTab, setActiveTab] = useState('appointments'); // 'appointments' | 'triage'
 
   useEffect(() => {
+    // Restore theme from localStorage on every page load
+    applyTheme(getStoredTheme());
     const stored = getStoredUser();
     if (!stored || stored.role !== 'doctor') { window.location.href = '/'; return; }
     setUser(stored);

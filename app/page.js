@@ -11,6 +11,7 @@ import NearbyFacilities from '@/components/NearbyFacilities';
 import RoleAuthModal   from '@/components/RoleAuthModal';
 import ReferredDoctors from '@/components/ReferredDoctors';
 import { Moon, Sun, User, Phone, Ambulance } from 'lucide-react';
+import { getStoredTheme, applyTheme } from '@/lib/theme';
 
 
 /* ── Tiny sparkline helper ─────────────────────────────── */
@@ -97,9 +98,9 @@ const ROLES_BTN = [
 
 /* ── Stats ──────────────────────────────────────────────── */
 const STATS = [
-  { val: '27B', label: 'MODEL PARAMS', color: '#10B981', points: [3,5,4,7,6,9,8,11,10,13] },
-  { val: '5+',  label: 'LANGUAGES',   color: '#06B6D4', points: [2,4,3,6,5,8,7,9,8,11] },
-  { val: '<3s', label: 'AVG. TRIAGE', color: '#F59E0B', points: [8,6,9,5,7,4,8,6,9,5] },
+  { val: '27B', label: 'MODEL PARAMS', color: '#10B981', lightColor: '#047857', points: [3,5,4,7,6,9,8,11,10,13] },
+  { val: '5+',  label: 'LANGUAGES',   color: '#06B6D4', lightColor: '#0369A1', points: [2,4,3,6,5,8,7,9,8,11] },
+  { val: '<3s', label: 'AVG. TRIAGE', color: '#F59E0B', lightColor: '#B45309', points: [8,6,9,5,7,4,8,6,9,5] },
 ];
 
 /* ── Main Component ─────────────────────────────────────── */
@@ -113,28 +114,44 @@ export default function HomePage() {
   const [showTelehealth, setShowTelehealth] = useState(false);
   const [bodyRegion, setBodyRegion]     = useState(null);
   const [authOpen, setAuthOpen]         = useState(false);
-  const [theme, setTheme]               = useState('light');
+  const [theme, setTheme] = useState('dark'); // will sync from localStorage in effect
   const [chatMessages, setChatMessages] = useState([
-    { id: 1, from: 'ai', text: 'Hello! Describe your symptoms to start triage, or ask a quick health question.', time: '10:00 PM' },
+    { id: 1, from: 'ai', text: 'Hello! Describe your symptoms or ask a health question below.', time: '—' },
   ]);
   const [chatInput, setChatInput] = useState('');
   const chatEndRef = useRef(null);
 
-  useEffect(() => { document.documentElement.setAttribute('data-theme', theme); }, [theme]);
+  // On mount: read saved theme from localStorage
+  useEffect(() => {
+    const saved = getStoredTheme();
+    setTheme(saved);
+    applyTheme(saved);
+  }, []);
+
+  // When theme changes (toggle): save + apply
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatMessages]);
 
   function getFormattedNow() {
     return new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   }
 
-  function sendChatMessage(e) {
+  function handleChatSend(e) {
     e.preventDefault();
-    if (!chatInput.trim()) return;
-    setChatMessages(p => [...p, { id: Date.now(), from: 'user', text: chatInput.trim(), time: getFormattedNow() }]);
+    const text = chatInput.trim();
+    if (!text) return;
     setChatInput('');
+    setChatMessages(p => [...p, { id: Date.now(), from: 'user', text, time: getFormattedNow() }]);
     setTimeout(() => {
-      setChatMessages(p => [...p, { id: Date.now() + 1, from: 'ai', text: 'Fill the triage form below and tap "Run Triage". For emergencies, call 112.', time: getFormattedNow() }]);
-    }, 900);
+      setChatMessages(p => [...p, {
+        id: Date.now() + 1, from: 'ai',
+        text: 'Got it — fill the symptom form below and tap "Run Triage" for a clinical assessment. For emergencies call 112.',
+        time: getFormattedNow(),
+      }]);
+    }, 800);
   }
 
   async function handleTriage(inputs) {
@@ -260,15 +277,18 @@ export default function HomePage() {
 
           {/* Stats */}
           <div className="stats-row">
-            {STATS.map((s) => (
-              <div key={s.label} className="stat-box">
-                <div className="stat-val" style={{ color: s.color }}>{s.val}</div>
-                <div className="stat-label">{s.label}</div>
-                <div className="stat-spark">
-                  <Sparkline points={s.points} color={s.color} />
+            {STATS.map((s) => {
+              const statColor = isDark ? s.color : (s.lightColor || s.color);
+              return (
+                <div key={s.label} className="stat-box">
+                  <div className="stat-val" style={{ color: statColor }}>{s.val}</div>
+                  <div className="stat-label">{s.label}</div>
+                  <div className="stat-spark">
+                    <Sparkline points={s.points} color={statColor} />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
         </motion.aside>
@@ -357,15 +377,35 @@ export default function HomePage() {
             <div ref={chatEndRef} className="h-4 shrink-0" />
           </div>
 
-          {/* Console bottom — triage form only (chat is unified in IntakeConsole) */}
+          {/* Console bottom — single chat input + triage form */}
           <div className="console-bottom">
-            {/* Triage form (language pills + narrative + run triage) */}
-            <IntakeConsole onSubmit={handleTriage} isProcessing={isProcessing} chatMessages={chatMessages} onSendChat={(text) => {
-              setChatMessages(p => [...p, { id: Date.now(), from: 'user', text, time: getFormattedNow() }]);
-              setTimeout(() => {
-                setChatMessages(p => [...p, { id: Date.now() + 1, from: 'ai', text: 'Fill the triage form and tap "Run Triage". For emergencies, call 112.', time: getFormattedNow() }]);
-              }, 900);
-            }} />
+
+            {/* ── Single Chat Input Bar ── */}
+            <form onSubmit={handleChatSend} className="chat-input-row">
+              <input
+                id="chat-input"
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Ask a health question…"
+                className="chat-input"
+                autoComplete="off"
+              />
+              <button
+                type="submit"
+                disabled={!chatInput.trim()}
+                className="chat-send-btn"
+                id="chat-send-btn"
+              >
+                <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              </button>
+            </form>
+
+            {/* ── Triage Form ── */}
+            <IntakeConsole onSubmit={handleTriage} isProcessing={isProcessing} />
           </div>
 
         </div>

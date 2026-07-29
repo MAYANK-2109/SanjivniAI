@@ -41,7 +41,7 @@
   --bubble-user-bg: #10B981;
   --bubble-user-text: #FFFFFF;
 
-  --chat-input-bg: (transparent);
+  --chat-input-bg: #FFFFFF;
   --send-bg: #10B981;
   --send-text: #FFFFFF;
 
@@ -1057,6 +1057,94 @@ body {
   background-image:
     radial-gradient(ellipse 80% 50% at 50% -10%, rgba(16, 185, 129, 0.05) 0%, transparent 60%);
 }
+
+/* ══════════════════════════════════════════════════════════
+   LIGHT THEME — COLOUR VISIBILITY FIXES
+   (amber/yellow are near-invisible on white, remap to deeper
+   hues with enough contrast for WCAG AA readability)
+   ══════════════════════════════════════════════════════════ */
+
+/* Tailwind amber-400 (#FBBF24) → map to amber-700 (#B45309) in light */
+[data-theme='light'] .text-amber-400,
+.is-light .text-amber-400 {
+  color: #92400E !important;   /* amber-800 — excellent contrast on white */
+}
+
+/* Tailwind amber-300 (pale) → amber-700 */
+[data-theme='light'] .text-amber-300,
+.is-light .text-amber-300 {
+  color: #B45309 !important;   /* amber-700 */
+}
+
+/* Tailwind yellow-400 (#FACC15) → yellow-800 */
+[data-theme='light'] .text-yellow-400,
+.is-light .text-yellow-400 {
+  color: #92400E !important;
+}
+
+/* Amber backgrounds — make them more legible */
+[data-theme='light'] .bg-amber-500\/15,
+.is-light .bg-amber-500\/15 {
+  background-color: rgba(146, 64, 14, 0.10) !important;
+}
+[data-theme='light'] .bg-amber-500\/10,
+.is-light .bg-amber-500\/10 {
+  background-color: rgba(146, 64, 14, 0.08) !important;
+}
+[data-theme='light'] .bg-amber-500\/8,
+.is-light .bg-amber-500\/8 {
+  background-color: rgba(146, 64, 14, 0.06) !important;
+}
+
+/* Amber borders — darken so they show up on white */
+[data-theme='light'] .border-amber-500\/40,
+.is-light .border-amber-500\/40 {
+  border-color: rgba(146, 64, 14, 0.35) !important;
+}
+[data-theme='light'] .border-amber-500\/35,
+.is-light .border-amber-500\/35 {
+  border-color: rgba(146, 64, 14, 0.30) !important;
+}
+[data-theme='light'] .border-amber-500\/20,
+.is-light .border-amber-500\/20 {
+  border-color: rgba(146, 64, 14, 0.20) !important;
+}
+
+/* Yellow severity dot — make it visible */
+[data-theme='light'] .bg-yellow-500,
+.is-light .bg-yellow-500 {
+  background-color: #D97706 !important;  /* amber-600 */
+}
+[data-theme='light'] .bg-amber-500,
+.is-light .bg-amber-500 {
+  background-color: #B45309 !important;  /* amber-700 */
+}
+
+/* Stats sparkline — amber color in stat-val already uses inline style, so only class-based */
+
+/* Stat-val in yellow theme — handled via inline style in JS, no override needed */
+
+/* Stat label (YELLOW triage severity in TriageResult) */
+[data-theme='light'] .sev-yellow {
+  --sev-c: #92400E;
+  --sev-bg: rgba(146, 64, 14, 0.08);
+  --sev-border: rgba(146, 64, 14, 0.22);
+}
+
+/* Doctor / hospital dashboard: "PENDING" appointment status text */
+[data-theme='light'] .text-amber-400.capitalize,
+.is-light .text-amber-400.capitalize {
+  color: #92400E !important;
+}
+
+/* Dashboard backgrounds that rely on Tailwind dark-only utility classes */
+/* These pages are primarily dark-only dashboards — ensure body stays themed */
+[data-theme='light'] body {
+  background-color: var(--bg-root);
+  background-image: none;
+}
+
+
 
 /* ══════════════════════════════════════════════════════════
    RESPONSIVE TWEAKS

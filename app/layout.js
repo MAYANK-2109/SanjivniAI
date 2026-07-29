@@ -28,7 +28,28 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" data-theme='light'>
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
+      <head>
+        {/*
+          Inline script runs synchronously before React hydration.
+          This reads localStorage and sets data-theme on <html>
+          BEFORE the page paints, preventing any flash of wrong theme.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var t = localStorage.getItem('sanjeevani-theme');
+                  if (t === 'light' || t === 'dark') {
+                    document.documentElement.setAttribute('data-theme', t);
+                  }
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${inter.variable} ${plusJakarta.variable} font-body antialiased min-h-screen`}
       >

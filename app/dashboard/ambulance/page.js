@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStoredUser, clearStoredUser } from '@/lib/auth';
+import { getStoredTheme, applyTheme } from '@/lib/theme';
 import DriverRideManager from '@/components/DriverRideManager';
 import { Ambulance, MapPin, Zap, CheckCircle2, Map, Radio, Bell, Phone } from 'lucide-react';
 
@@ -130,6 +131,8 @@ export default function AmbulanceDashboard() {
   const stepIdx = STATUS_STEPS.findIndex(s => s.key === callStatus);
 
   useEffect(() => {
+    // Restore theme from localStorage on every page load
+    applyTheme(getStoredTheme());
     const stored = getStoredUser();
     if (!stored || stored.role !== 'ambulance') { window.location.href = '/'; return; }
     setUser(stored);
