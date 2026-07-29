@@ -10,36 +10,69 @@ export const requestRide = async (req, res) => {
   try {
     const data = req.body;
 
+    let rideIdStr;
+    let isMongo = false;
+    let rideDoc = { ...data, status: 'pending', createdAt: new Date() };
+
     try {
       const db = await getDatabase();
       if (db) {
-        const rideDoc = { ...data, status: 'pending', createdAt: new Date() };
         const result = await db.collection('rides').insertOne(rideDoc);
-        return res.json({ success: true, rideId: result.insertedId.toString(), _source: 'mongodb' });
+        rideIdStr = result.insertedId.toString();
+        isMongo = true;
       }
     } catch (dbErr) {
       console.warn('[rides/request] MongoDB error, using in-memory store:', dbErr.message);
     }
 
-    const rideId = generateMockRideId();
-    IN_MEMORY_RIDES.set(rideId, { _id: rideId, ...data, status: 'pending', createdAt: new Date() });
+    if (!isMongo) {
+      rideIdStr = generateMockRideId();
+      IN_MEMORY_RIDES.set(rideIdStr, { _id: rideIdStr, ...rideDoc });
+    }
 
-    setTimeout(() => {
-      const ride = IN_MEMORY_RIDES.get(rideId);
-      if (ride && ride.status === 'pending') {
-        ride.status = 'accepted';
-        ride.driverId = 'DRV-001';
-        ride.driver = {
+    // Auto-accept simulation (works for both Memory and MongoDB)
+    setTimeout(async () => {
+      try {
+        console.log(`[rides/auto-accept] Starting simulation for ${rideIdStr}, isMongo: ${isMongo}`);
+        const mockDriver = {
           name: 'Rajesh Kumar', initials: 'RK', color: '#EF4444',
           rating: '4.9', trips: 1240, experience: '8 yrs',
           phone: '+919876543210', vehicle: 'DL-01-AB-1234', model: 'Tata Winger ALS',
         };
-        ride.acceptedAt = new Date();
-        IN_MEMORY_RIDES.set(rideId, ride);
+
+        if (isMongo) {
+          const db = await getDatabase();
+          if (db) {
+            console.log(`[rides/auto-accept] Querying DB for ${rideIdStr}`);
+            const currentRide = await db.collection('rides').findOne({ _id: new ObjectId(rideIdStr) });
+            console.log(`[rides/auto-accept] currentRide found:`, !!currentRide, 'status:', currentRide?.status);
+            if (currentRide && currentRide.status === 'pending') {
+              const res = await db.collection('rides').updateOne(
+                { _id: new ObjectId(rideIdStr) },
+                { $set: { status: 'accepted', driverId: 'DRV-001', driver: mockDriver, acceptedAt: new Date() } }
+              );
+              console.log(`[rides/auto-accept] updateOne result: modifiedCount=${res.modifiedCount}`);
+            }
+          }
+        } else {
+          const ride = IN_MEMORY_RIDES.get(rideIdStr);
+          if (ride && ride.status === 'pending') {
+            ride.status = 'accepted';
+            ride.driverId = 'DRV-001';
+            ride.driver = mockDriver;
+            ride.acceptedAt = new Date();
+            IN_MEMORY_RIDES.set(rideIdStr, ride);
+          }
+        }
+      } catch (err) {
+        console.error('[rides/auto-accept] Error:', err.message);
       }
     }, 5000);
 
-    return res.json({ success: true, rideId, _source: 'mock' });
+    return res.json({ success: true, rideId: rideIdStr, _source: isMongo ? 'mongodb' : 'mock' });
+
+
+
   } catch (err) {
     console.error('[rides/request] Fatal error:', err);
     return res.status(500).json({ success: false, error: err.message });

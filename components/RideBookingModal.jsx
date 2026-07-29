@@ -75,7 +75,9 @@ function RadarPulse() {
 }
 
 export default function RideBookingModal({ isOpen, onClose, patientLocation = null }) {
-  const [step, setStep] = useState('SEARCHING');
+  const [step, setStep] = useState('ENTER_LOCATION');
+  const [pickup, setPickup] = useState(patientLocation || '');
+  const [destination, setDestination] = useState('');
   const [selectedTier, setSelectedTier] = useState(null);
   const [driver, setDriver] = useState(null);
   const [countdown, setCountdown] = useState(null);
@@ -190,7 +192,8 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
           tier: tier,
           patient: {
             name: 'Patient',
-            location: patientLocation || 'Current Location',
+            location: pickup || patientLocation || 'Current Location',
+            destination: destination || 'Nearest Hospital',
             condition: 'Emergency — Medical Triage',
           },
           fare: tier.price
@@ -219,7 +222,7 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
   }
 
   function handleClose() {
-    setStep('SEARCHING');
+    setStep('ENTER_LOCATION');
     setSelectedTier(null);
     setDriver(null);
     setCountdown(null);
@@ -279,8 +282,54 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
               </button>
             </div>
 
-            {/* ── Step: SEARCHING ─────────────────────────────────── */}
+            {/* ── Step: ENTER_LOCATION ───────────────────────────── */}
             <AnimatePresence mode="wait">
+              {step === 'ENTER_LOCATION' && (
+                <motion.div
+                  key="location"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="p-6 flex flex-col gap-4"
+                >
+                  <div className="text-center mb-2">
+                    <p className="font-display text-[17px] font-bold text-white">Where to?</p>
+                    <p className="text-[13px] text-slate-400">Enter pickup and destination</p>
+                  </div>
+                  
+                  <div className="flex flex-col gap-3">
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-3.5 text-emerald-500" size={16} />
+                      <input 
+                        type="text"
+                        placeholder="Pickup Location"
+                        value={pickup}
+                        onChange={(e) => setPickup(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-[14px] text-white focus:border-emerald-500 focus:outline-none transition-all"
+                      />
+                    </div>
+                    
+                    <div className="relative">
+                      <Navigation className="absolute left-3 top-3.5 text-red-500" size={16} />
+                      <input 
+                        type="text"
+                        placeholder="Destination Hospital (e.g. City Care ER)"
+                        value={destination}
+                        onChange={(e) => setDestination(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-[14px] text-white focus:border-red-500 focus:outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => setStep('SEARCHING')}
+                    disabled={!pickup || !destination}
+                    className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 font-display text-[14px] font-bold text-white shadow-lg shadow-red-900/40 hover:bg-red-500 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    Find Ambulances
+                  </button>
+                </motion.div>
+              )}
+
+              {/* ── Step: SEARCHING ─────────────────────────────────── */}
               {step === 'SEARCHING' && (
                 <motion.div
                   key="searching"
