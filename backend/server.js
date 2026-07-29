@@ -21,6 +21,7 @@ import nearbyCareRoutes from './routes/nearby-care.routes.js';
 import ridesRoutes from './routes/rides.routes.js';
 import triageRoutes from './routes/triage.routes.js';
 import seedRoutes from './routes/seed.routes.js';
+import placesRoutes from './routes/places.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -48,6 +49,7 @@ app.use('/api/nearby-care', nearbyCareRoutes);
 app.use('/api/rides', ridesRoutes);
 app.use('/api/triage', triageRoutes);
 app.use('/api/seed', seedRoutes);
+app.use('/api/places', placesRoutes);
 
 // 404 handler
 app.use((req, res) => {

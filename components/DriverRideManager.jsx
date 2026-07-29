@@ -124,7 +124,7 @@ function DriverRideNotification({ ride, onAccept, onDecline }) {
   );
 }
 
-function ActiveRidePanel({ ride, onComplete }) {
+function ActiveRidePanel({ ride, onComplete, onStatusUpdate, onCancel }) {
   const [elapsed, setElapsed] = useState(0);
   const [rideStatus, setRideStatus] = useState('heading_to_patient'); // heading_to_patient | arrived | trip_started | completed
 
@@ -150,9 +150,12 @@ function ActiveRidePanel({ ride, onComplete }) {
     return `${m}:${sec.toString().padStart(2, '0')}`;
   }
 
-  function advanceStatus() {
+  async function advanceStatus() {
     const next = statusOrder[currentIdx + 1];
-    if (next) setRideStatus(next);
+    if (next) {
+      setRideStatus(next);
+      if (onStatusUpdate) await onStatusUpdate(next);
+    }
     if (next === 'completed') setTimeout(() => onComplete(), 1500);
   }
 
@@ -206,6 +209,27 @@ function ActiveRidePanel({ ride, onComplete }) {
             {current.action}
           </button>
         )}
+        
+        <div className="flex gap-2 mt-2">
+          {ride.patient.lat && ride.patient.lng && (
+            <a 
+              href={`https://www.google.com/maps/search/?api=1&query=${ride.patient.lat},${ride.patient.lng}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 py-2.5 font-display text-[12px] font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all active:scale-95"
+            >
+              <MapPin size={14} /> View on Map
+            </a>
+          )}
+          {rideStatus !== 'completed' && (
+            <button
+              onClick={() => onCancel && onCancel()}
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 py-2.5 font-display text-[12px] font-semibold text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-all active:scale-95"
+            >
+              <XCircle size={14} /> Cancel Ride
+            </button>
+          )}
+        </div>
         {rideStatus === 'completed' && (
           <div className="text-center py-2">
             <p className="font-display text-[14px] font-semibold text-emerald-400 flex items-center justify-center gap-1.5"><CheckCircle size={16} /> Trip Completed! Well done.</p>
@@ -261,7 +285,7 @@ export default function DriverRideManager({ onActiveRideChange }) {
     if (!activeRide && !incomingRide) {
       const pollDB = async () => {
         try {
-          const res = await fetch(apiUrl('/api/rides/driver?tier=als')); // Just hardcoding ALS tier for demo driver
+          const res = await fetch(apiUrl('/api/rides/driver')); // Polling for any tier in this mock
           const data = await res.json();
           if (data.success && data.ride) {
              if (data.ride._id === lastCompletedId) return;
@@ -310,6 +334,33 @@ export default function DriverRideManager({ onActiveRideChange }) {
     setLastCompletedId(activeRide?._id);
     setActiveRide(null);
   }
+  
+  async function handleStatusUpdate(status) {
+    if (!activeRide) return;
+    try {
+      await fetch(apiUrl('/api/rides/driver'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rideId: activeRide._id, driverId: 'amb-1', action: 'update_status', status })
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleCancelActiveRide() {
+    if (!activeRide) return;
+    try {
+      await fetch(apiUrl('/api/rides/driver'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rideId: activeRide._id, driverId: 'amb-1', action: 'update_status', status: 'cancelled' })
+      });
+      setActiveRide(null);
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   return (
     <>
@@ -335,7 +386,7 @@ export default function DriverRideManager({ onActiveRideChange }) {
           >
             <div className="mb-6">
               <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-400 mb-2 flex items-center gap-1.5"><Zap size={12} /> Active Ride</p>
-              <ActiveRidePanel ride={activeRide} onComplete={handleComplete} />
+              <ActiveRidePanel ride={activeRide} onComplete={handleComplete} onStatusUpdate={handleStatusUpdate} onCancel={handleCancelActiveRide} />
             </div>
           </motion.div>
         )}

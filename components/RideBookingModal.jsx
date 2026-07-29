@@ -78,22 +78,72 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
   const [step, setStep] = useState('ENTER_LOCATION');
   const [pickup, setPickup] = useState(patientLocation || '');
   const [destination, setDestination] = useState('');
-  const [selectedTier, setSelectedTier] = useState(null);
+  const [selectedTier, setSelectedTier] = useState(AMBULANCE_TIERS[0]);
+  const [pickupCoords, setPickupCoords] = useState(null);
+  const [destinationCoords, setDestinationCoords] = useState(null);
   const [driver, setDriver] = useState(null);
   const [countdown, setCountdown] = useState(null);
   const [etaSeconds, setEtaSeconds] = useState(290);
   const [driverDeclineReason, setDriverDeclineReason] = useState(null);
   const [activeRideId, setActiveRideId] = useState(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [destinationSuggestions, setDestinationSuggestions] = useState([]);
+  const [isSearchingDest, setIsSearchingDest] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const timerRef = useRef(null);
   const etaRef = useRef(null);
 
-  // Auto-advance from SEARCHING → SELECT_TIER
+  // Autocomplete for destination
   useEffect(() => {
-    if (step === 'SEARCHING') {
-      const t = setTimeout(() => setStep('SELECT_TIER'), 2800);
-      return () => clearTimeout(t);
+    if (!destination || destination.length < 3 || !showSuggestions) {
+      setDestinationSuggestions([]);
+      return;
     }
-  }, [step]);
+    const timer = setTimeout(async () => {
+      setIsSearchingDest(true);
+      try {
+        const res = await fetch(apiUrl(`/api/places/autocomplete?q=${encodeURIComponent(destination)}`));
+        const data = await res.json();
+        if (data.success && data.places) {
+          setDestinationSuggestions(data.places);
+        }
+      } catch (err) {
+        console.error('Autocomplete failed', err);
+      } finally {
+        setIsSearchingDest(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [destination, showSuggestions]);
+
+  function handleCurrentLocation() {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      try {
+        setPickupCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        const res = await fetch(apiUrl(`/api/places/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`));
+        const data = await res.json();
+        if (data.success && data.address) {
+          setPickup(data.address);
+        } else {
+          setPickup(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
+        }
+      } catch (err) {
+        setPickup(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
+      } finally {
+        setIsLocating(false);
+      }
+    }, () => {
+      alert("Unable to retrieve your location");
+      setIsLocating(false);
+    });
+  }
+
+  
 
   // Poll for ride status during FINDING_DRIVER
   useEffect(() => {
@@ -179,24 +229,25 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
     }
   }, [step, selectedTier, activeRideId]);
 
-  async function handleSelectTier(tier) {
-    setSelectedTier(tier);
+  async function handleBookRide() {
+    if (!selectedTier || !pickup || !destination) return;
     setStep('FINDING_DRIVER');
     
-    // Create the real ride request in MongoDB
     try {
       const res = await fetch(apiUrl('/api/rides/request'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tier: tier,
+          tier: selectedTier,
           patient: {
             name: 'Patient',
             location: pickup || patientLocation || 'Current Location',
+            lat: pickupCoords?.lat,
+            lng: pickupCoords?.lon,
             destination: destination || 'Nearest Hospital',
             condition: 'Emergency — Medical Triage',
           },
-          fare: tier.price
+          fare: selectedTier.price
         })
       });
       const data = await res.json();
@@ -206,7 +257,7 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
     } catch (err) {
       console.error(err);
       setDriverDeclineReason('Network error. Failed to request ride.');
-      setTimeout(() => setStep('SEARCHING'), 3000);
+      setTimeout(() => setStep('ENTER_LOCATION'), 3000);
     }
   }
 
@@ -303,8 +354,16 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
                         placeholder="Pickup Location"
                         value={pickup}
                         onChange={(e) => setPickup(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-[14px] text-white focus:border-emerald-500 focus:outline-none transition-all"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-10 text-[14px] text-white focus:border-emerald-500 focus:outline-none transition-all"
                       />
+                      <button 
+                        onClick={handleCurrentLocation}
+                        disabled={isLocating}
+                        title="Use Current Location"
+                        className="absolute right-3 top-3.5 text-emerald-500 hover:text-emerald-400 transition-colors disabled:opacity-50"
+                      >
+                        <Navigation size={16} className={isLocating ? "animate-spin" : ""} />
+                      </button>
                     </div>
                     
                     <div className="relative">
@@ -313,79 +372,75 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
                         type="text"
                         placeholder="Destination Hospital (e.g. City Care ER)"
                         value={destination}
-                        onChange={(e) => setDestination(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-[14px] text-white focus:border-red-500 focus:outline-none transition-all"
+                        onChange={(e) => {
+                          setDestination(e.target.value);
+                          setShowSuggestions(true);
+                        }}
+                        onFocus={() => setShowSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-10 text-[14px] text-white focus:border-red-500 focus:outline-none transition-all"
                       />
+                      {isSearchingDest && (
+                        <div className="absolute right-3 top-3.5">
+                          <Activity size={16} className="text-red-500 animate-spin" />
+                        </div>
+                      )}
+                      
+                      {/* Autocomplete Dropdown */}
+                      <AnimatePresence>
+                        {showSuggestions && destinationSuggestions.length > 0 && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
+                            className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-white/10 rounded-xl overflow-hidden z-50 max-h-[200px] overflow-y-auto"
+                          >
+                            {destinationSuggestions.map((place, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => {
+                                  setDestination(place.display_name);
+                                  setDestinationCoords({ lat: place.lat, lon: place.lon });
+                                  setShowSuggestions(false);
+                                }}
+                                className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-white/5 last:border-0 transition-colors flex items-start gap-2"
+                              >
+                                <MapPin size={14} className="mt-1 text-slate-400 flex-shrink-0" />
+                                <span className="text-[13px] text-slate-300 leading-tight">{place.display_name}</span>
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
                   
-                  <button
-                    onClick={() => setStep('SEARCHING')}
-                    disabled={!pickup || !destination}
-                    className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 font-display text-[14px] font-bold text-white shadow-lg shadow-red-900/40 hover:bg-red-500 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    Find Ambulances
-                  </button>
-                </motion.div>
-              )}
-
-              {/* ── Step: SEARCHING ─────────────────────────────────── */}
-              {step === 'SEARCHING' && (
-                <motion.div
-                  key="searching"
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                  className="p-8 flex flex-col items-center gap-5"
-                >
-                  <RadarPulse />
-                  <div className="text-center">
-                    <p className="font-display text-[17px] font-bold text-white">Locating Ambulances Nearby</p>
-                    <p className="text-[13px] text-slate-400 mt-1">Scanning within 10km of your location...</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-emerald-400">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                    LIVE GPS SCAN ACTIVE
-                  </div>
-                </motion.div>
-              )}
-
-              {/* ── Step: SELECT_TIER ──────────────────────────────── */}
-              {step === 'SELECT_TIER' && (
-                <motion.div
-                  key="select"
-                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                  className="p-5 flex flex-col gap-3"
-                >
-                  <p className="font-display text-[15px] font-bold text-white">Choose Ambulance Type</p>
-                  <p className="text-[12px] text-slate-400 -mt-1">3 vehicles found nearby</p>
-                  {AMBULANCE_TIERS.map(t => (
-                    <button
-                      key={t.id}
-                      onClick={() => handleSelectTier(t)}
-                      className="w-full text-left rounded-2xl border p-4 transition-all hover:scale-[1.01] active:scale-[0.99]"
-                      style={{ borderColor: t.borderColor, background: `${t.color}08` }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="text-2xl"><t.icon size={24} color={t.color} /></div>
+                  <div className="mt-2 space-y-2">
+                    <p className="font-display text-[13px] font-bold text-white mb-2">Select Ambulance Type</p>
+                    {AMBULANCE_TIERS.map(t => (
+                      <button
+                        key={t.id}
+                        onClick={() => setSelectedTier(t)}
+                        className={`w-full text-left rounded-xl border p-3 transition-all flex items-center gap-3 ${selectedTier?.id === t.id ? 'bg-white/10 scale-[1.02]' : 'bg-white/5 hover:bg-white/10'}`}
+                        style={{ borderColor: selectedTier?.id === t.id ? t.color : 'rgba(255,255,255,0.1)' }}
+                      >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/40"><t.icon size={20} color={t.color} /></div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <p className="font-display text-[14px] font-bold text-white">{t.label}</p>
-                            <p className="font-display text-[16px] font-black" style={{ color: t.color }}>₹{t.price.toLocaleString()}</p>
-                          </div>
-                          <p className="text-[11px] text-slate-400 mt-0.5">{t.desc}</p>
-                          <div className="flex items-center gap-3 mt-2">
-                            <span className="flex items-center gap-1 text-[11px]" style={{ color: t.color }}>
-                              <Clock size={11} /> {t.eta}
-                            </span>
-                            {t.features.slice(0, 2).map(f => (
-                              <span key={f} className="text-[10px] text-slate-500 bg-white/5 px-2 py-0.5 rounded-full">{f}</span>
-                            ))}
-                          </div>
+                           <div className="flex justify-between items-center">
+                             <p className="font-display text-[14px] font-bold text-white">{t.label}</p>
+                             <p className="font-display text-[14px] font-black" style={{ color: t.color }}>₹{t.price}</p>
+                           </div>
+                           <p className="text-[11px] text-slate-400 truncate">{t.eta} • {t.desc}</p>
                         </div>
-                        <ChevronRight size={16} className="text-slate-500 shrink-0 mt-0.5" />
-                      </div>
-                    </button>
-                  ))}
-                  <p className="text-center text-[11px] text-slate-600 font-mono mt-1">Inclusive of taxes · No surge pricing in emergencies</p>
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={handleBookRide}
+                    disabled={!pickup || !destination || !selectedTier}
+                    className="w-full mt-4 flex items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 font-display text-[14px] font-bold text-white shadow-lg shadow-red-900/40 hover:bg-red-500 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    Book {selectedTier?.short} Ambulance
+                  </button>
                 </motion.div>
               )}
 
