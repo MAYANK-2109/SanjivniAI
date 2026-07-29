@@ -12,7 +12,7 @@
  */
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
-import { INITIAL_PROFILES } from '@/lib/mockData';
+import { findRegisteredUser } from '@/lib/mockData';
 
 function makeToken(profile) {
   const payload = { id: profile.id, role: profile.role, name: profile.name, ts: Date.now() };
@@ -49,7 +49,7 @@ export async function POST(req) {
 
     let profile = null;
 
-    // ── 1. Try MongoDB ────────────────────────────────────────────────
+    // ── 1. Fetch & Check from MongoDB Database ────────────────────────
     try {
       const db = await getDatabase();
       if (db) {
@@ -66,21 +66,16 @@ export async function POST(req) {
         }
       }
     } catch (dbErr) {
-      console.warn('[auth/login] MongoDB error, falling back to static profiles:', dbErr.message);
+      console.warn('[auth/login] MongoDB fetch error, checking registered memory profiles:', dbErr.message);
     }
 
-    // ── 2. Fallback to static demo profiles ──────────────────────────
+    // ── 2. Fetch & Check from Registered User Memory Store ─────────────
     if (!profile) {
-      // Find exact profile matching role AND email/phone
-      const staticProfile = INITIAL_PROFILES.find(
-        (p) =>
-          p.role === role &&
-          (p.email.toLowerCase() === identifier.toLowerCase() || p.phone === identifier)
-      );
+      const foundUser = findRegisteredUser(role, identifier);
 
-      if (staticProfile) {
-        if (staticProfile.password === password) {
-          profile = staticProfile;
+      if (foundUser) {
+        if (foundUser.password === password) {
+          profile = foundUser;
         } else {
           return NextResponse.json(
             { success: false, error: 'Incorrect password for this account.' },
@@ -94,7 +89,7 @@ export async function POST(req) {
       return NextResponse.json(
         {
           success: false,
-          error: `No ${role} account found matching "${identifier}". Please check your email/phone or register a new account.`,
+          error: `No registered ${role} account found matching "${identifier}". Only registered users can sign in. Please register first.`,
         },
         { status: 401 }
       );

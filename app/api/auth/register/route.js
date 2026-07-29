@@ -9,7 +9,7 @@
  */
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
-import { INITIAL_PROFILES } from '@/lib/mockData';
+import { INITIAL_PROFILES, findRegisteredUser, saveRegisteredUser } from '@/lib/mockData';
 
 function makeToken(profile) {
   const payload = { id: profile.id, role: profile.role, name: profile.name, ts: Date.now() };
@@ -71,8 +71,9 @@ export async function POST(req) {
 
     const newProfile = {
       role,
-      email: email.toLowerCase(),
-      password: password || 'demo1234',
+      email: identifier.includes('@') ? identifier.toLowerCase() : (rest.email || identifier).toLowerCase(),
+      phone: !identifier.includes('@') ? identifier : rest.phone,
+      password: password,
       name,
       id: generateId(role),
       createdAt: new Date(),
@@ -81,20 +82,28 @@ export async function POST(req) {
       ...rest,
     };
 
+    // ── Check duplicate in memory first ────────────────────────────────
+    if (findRegisteredUser(role, identifier)) {
+      return NextResponse.json(
+        { success: false, error: 'An account with this email/phone already exists for this role.' },
+        { status: 409 }
+      );
+    }
+
     // ── 1. Try to save to MongoDB ────────────────────────────────────
     let savedToDb = false;
     try {
       const db = await getDatabase();
       if (db) {
-        // Check for duplicate email+role
+        // Check for duplicate email+role in DB
         const existing = await db.collection('profiles').findOne({
           role,
-          email: email.toLowerCase(),
+          $or: [{ email: identifier.toLowerCase() }, { phone: identifier }],
         });
 
         if (existing) {
           return NextResponse.json(
-            { success: false, error: 'An account with this email already exists for this role.' },
+            { success: false, error: 'An account with this email/phone already exists for this role.' },
             { status: 409 }
           );
         }
@@ -103,8 +112,11 @@ export async function POST(req) {
         savedToDb = true;
       }
     } catch (dbErr) {
-      console.warn('[auth/register] MongoDB error, proceeding as demo registration:', dbErr.message);
+      console.warn('[auth/register] MongoDB error, proceeding with memory registration:', dbErr.message);
     }
+
+    // Always save in server memory so login can fetch & verify it
+    saveRegisteredUser(newProfile);
 
     // Strip password before sending
     const { password: _pw, ...safeProfile } = newProfile;
