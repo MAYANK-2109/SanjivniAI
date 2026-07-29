@@ -64,7 +64,7 @@ export default function AcuityGauge({ result, isProcessing }) {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl leading-none">{sev.emoji}</span>
+                <sev.icon size={32} strokeWidth={1.5} />
                 <span className="font-mono text-[11px] font-bold tracking-widest mt-1" style={{ color: sev.color }}>
                   {result.Severity_Color}
                 </span>
@@ -91,7 +91,7 @@ export default function AcuityGauge({ result, isProcessing }) {
                       isActive ? `${cs.border} ${cs.bg}` : 'border-white/5 bg-white/3'
                     }`}
                   >
-                    <span className="text-base">{cs.emoji}</span>
+                    <cs.icon size={20} strokeWidth={1.5} />
                     <span className={`mono-tag ${isActive ? cs.text : 'text-slate-700'}`}>{c}</span>
                   </div>
                 );

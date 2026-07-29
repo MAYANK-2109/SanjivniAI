@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Ambulance, Building2, Stethoscope, HeartPulse, KeyRound, UserPlus, X, CheckCircle2 } from 'lucide-react';
+import { Ambulance, Building2, Stethoscope, HeartPulse, KeyRound, UserPlus, X, CheckCircle2, Lock } from 'lucide-react';
 import { setStoredUser } from '@/lib/auth';
 
 /* ─── Role config ──────────────────────────────────────────── */
@@ -412,9 +412,9 @@ export default function RoleAuthModal({ isOpen, onClose }) {
           </div>
 
           {/* ── Footer ── */}
-          <div className="auth-modal-footer">
-            <p className="auth-modal-footer-text">
-              🔒 Secured · Sanjeevani MedGemma-27B Health Network
+          <div className="border-t border-white/6 px-6 py-3 text-center">
+            <p className="font-mono text-[11px] text-slate-600 flex items-center justify-center gap-1.5">
+              <Lock size={12} /> Secured · Sanjeevani MedGemma-27B Health Network
             </p>
           </div>
         </motion.div>

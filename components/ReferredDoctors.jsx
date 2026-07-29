@@ -39,9 +39,9 @@ function QuickBookModal({ doctor, onClose }) {
         <div className="p-5">
           {done ? (
             <div className="text-center py-6">
-              <div className="text-4xl mb-3">✅</div>
-              <p className="book-modal-done-title">Appointment Requested!</p>
-              <p className="book-modal-done-sub">Sent to Dr. {doctor.name}</p>
+              <div className="flex justify-center mb-3 text-emerald-400"><CheckCircle size={36} /></div>
+              <p className="font-semibold text-slate-100">Appointment Requested!</p>
+              <p className="text-sm text-slate-400 mt-1">Sent to Dr. {doctor.name}</p>
             </div>
           ) : (
             <>
@@ -71,9 +71,8 @@ function QuickBookModal({ doctor, onClose }) {
                   placeholder="Brief symptom description *" rows={2}
                   className="book-modal-input resize-none" />
                 <button type="submit" disabled={submitting}
-                  className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all text-white disabled:opacity-60"
-                  style={{background:'#2563EB'}}>
-                  {submitting ? 'Booking...' : '📅 Book Appointment'}
+                  className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white font-semibold text-sm transition-all">
+                  {submitting ? 'Booking...' : <><CalendarCheck size={14} className="inline mr-1 -mt-0.5" /> Book Appointment</>}
                 </button>
               </form>
             </>

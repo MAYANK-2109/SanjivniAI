@@ -161,7 +161,9 @@ function ActiveRidePanel({ ride, onComplete }) {
       <div className="px-4 py-3 flex items-center gap-2.5" style={{ background: `${current.color}18`, borderBottom: `1px solid ${current.color}30` }}>
         <span style={{ color: current.color }}>{current.icon}</span>
         <p className="font-display text-[13px] font-semibold" style={{ color: current.color }}>{current.label}</p>
-        <div className="ml-auto font-mono text-[12px] text-slate-400">⏱ {formatElapsed(elapsed)}</div>
+        <div className="ml-auto flex items-center font-mono text-[12px] text-slate-400">
+          <Clock size={12} className="mr-1" /> {formatElapsed(elapsed)}
+        </div>
       </div>
 
       <div className="p-4 space-y-3">
@@ -205,7 +207,7 @@ function ActiveRidePanel({ ride, onComplete }) {
         )}
         {rideStatus === 'completed' && (
           <div className="text-center py-2">
-            <p className="font-display text-[14px] font-semibold text-emerald-400">✅ Trip Completed! Well done.</p>
+            <p className="font-display text-[14px] font-semibold text-emerald-400 flex items-center justify-center gap-1.5"><CheckCircle size={16} /> Trip Completed! Well done.</p>
             <p className="text-[11px] text-slate-400 mt-1">Fare of ₹{ride.fare.toLocaleString()} will be credited within 24h</p>
           </div>
         )}
@@ -331,7 +333,7 @@ export default function DriverRideManager({ onActiveRideChange }) {
             className="overflow-hidden"
           >
             <div className="mb-6">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-400 mb-2">🚨 Active Ride</p>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-400 mb-2 flex items-center gap-1.5"><Zap size={12} /> Active Ride</p>
               <ActiveRidePanel ride={activeRide} onComplete={handleComplete} />
             </div>
           </motion.div>

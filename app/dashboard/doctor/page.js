@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStoredUser, clearStoredUser } from '@/lib/auth';
+<<<<<<< Updated upstream
+import { CheckCircle2, CalendarCheck, Stethoscope, AlertTriangle, Inbox, Calendar, Clock, Phone, Check, X, Save, MousePointerClick } from 'lucide-react';
+=======
+import { getStoredTheme, applyTheme } from '@/lib/theme';
+>>>>>>> Stashed changes
 
 const SEV = {
   RED:    { bg: 'bg-red-500/15',     border: 'border-red-500/40',    text: 'text-red-400',    dot: 'bg-red-500'    },
@@ -50,7 +55,7 @@ function AppointmentModal({ onClose, doctorId, doctorName }) {
         <div className="p-6">
           {done ? (
             <div className="text-center py-8">
-              <div className="text-5xl mb-4">✅</div>
+              <div className="flex justify-center mb-4 text-emerald-400"><CheckCircle2 size={48} /></div>
               <h3 className="font-bold text-lg text-slate-100">Appointment Booked!</h3>
               <p className="text-slate-400 text-sm mt-1">Sent to Dr. {doctorName}'s dashboard</p>
             </div>
@@ -116,7 +121,7 @@ function AppointmentModal({ onClose, doctorId, doctorName }) {
                 </div>
                 <button type="submit" disabled={submitting}
                   className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white font-semibold text-sm transition-all shadow-lg shadow-blue-900/30">
-                  {submitting ? 'Booking...' : '📅 Confirm Appointment'}
+                  {submitting ? 'Booking...' : <><CalendarCheck size={14} className="inline mr-1" /> Confirm Appointment</>}
                 </button>
               </form>
             </>
@@ -138,6 +143,8 @@ export default function DoctorDashboard() {
   const [activeTab, setActiveTab] = useState('appointments'); // 'appointments' | 'triage'
 
   useEffect(() => {
+    // Restore theme from localStorage on every page load
+    applyTheme(getStoredTheme());
     const stored = getStoredUser();
     if (!stored || stored.role !== 'doctor') { window.location.href = '/'; return; }
     setUser(stored);
@@ -223,7 +230,7 @@ export default function DoctorDashboard() {
       <header className="relative z-30 border-b border-white/8 bg-[#07080c]/90 backdrop-blur-xl sticky top-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="h-8 w-8 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-lg shrink-0">👨‍⚕️</div>
+            <div className="h-8 w-8 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center shrink-0 text-blue-400"><Stethoscope size={18} /></div>
             <div className="hidden sm:block">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-sm text-slate-100">SANJEEVANI</span>
@@ -235,7 +242,7 @@ export default function DoctorDashboard() {
           <div className="flex items-center gap-2">
             <button onClick={() => setShowBookModal(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all">
-              📅 Book Appointment
+              <CalendarCheck size={14} /> Book Appointment
             </button>
             <Link href="/" onClick={clearStoredUser}
               className="px-3 py-1.5 text-xs rounded-lg bg-white/5 hover:bg-red-500/15 border border-white/10 hover:border-red-500/30 text-slate-400 hover:text-red-300 transition-all">
@@ -262,10 +269,10 @@ export default function DoctorDashboard() {
 
         {/* Tab switcher */}
         <div className="flex gap-1 bg-white/4 border border-white/8 rounded-xl p-1 mb-5 w-fit">
-          {[['appointments','📅 Appointments'],['triage','🚨 Triage Queue']].map(([k,l]) => (
-            <button key={k} onClick={() => setActiveTab(k)}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab===k ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>
-              {l}
+          {[{id: 'appointments', label: 'Appointments', icon: <CalendarCheck size={14} className="inline mr-1" />}, {id: 'triage', label: 'Triage Queue', icon: <AlertTriangle size={14} className="inline mr-1" />}].map((tab) => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab===tab.id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>
+              {tab.icon} {tab.label}
             </button>
           ))}
         </div>
@@ -276,7 +283,7 @@ export default function DoctorDashboard() {
             {activeTab === 'appointments' ? (
               appointments.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 border border-white/6 bg-white/3 rounded-2xl text-slate-500">
-                  <span className="text-3xl mb-3">📭</span>
+                  <Inbox size={36} className="mb-3 text-slate-500" />
                   <p className="text-sm">No appointments yet</p>
                   <p className="text-xs mt-1">Patients can book via the "Book Appointment" button</p>
                 </div>
@@ -294,7 +301,7 @@ export default function DoctorDashboard() {
                       </div>
                       <p className="text-xs text-slate-400 mb-1">{appt.symptoms?.substring(0,60)}...</p>
                       <div className="flex items-center gap-3 text-[10px] font-mono text-slate-500">
-                        <span>📅 {appt.date}</span><span>🕐 {appt.time}</span><span>{appt.gender} · {appt.age}y</span>
+                        <span><Calendar size={12} className="inline mr-1" />{appt.date}</span><span><Clock size={12} className="inline mr-1" />{appt.time}</span><span>{appt.gender} · {appt.age}y</span>
                       </div>
                     </motion.button>
                   );
@@ -303,7 +310,7 @@ export default function DoctorDashboard() {
             ) : (
               triageQueue.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 border border-white/6 bg-white/3 rounded-2xl text-slate-500">
-                  <span className="text-3xl mb-3">✅</span><p className="text-sm">No triage alerts</p>
+                  <CheckCircle2 size={36} className="mb-3 text-slate-500" /><p className="text-sm">No triage alerts</p>
                 </div>
               ) : (
                 triageQueue.map((t, i) => {
@@ -339,25 +346,25 @@ export default function DoctorDashboard() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <h2 className="font-bold text-xl text-slate-100">{selectedAppt.patientName}</h2>
-                      <p className="text-sm text-slate-400 mt-0.5">{selectedAppt.age} yrs · {selectedAppt.gender} · 📞 {selectedAppt.phone}</p>
+                      <p className="text-sm text-slate-400 mt-0.5">{selectedAppt.age} yrs · {selectedAppt.gender} · <Phone size={12} className="inline mx-1" />{selectedAppt.phone}</p>
                     </div>
                     <div className="flex gap-2 flex-wrap">
                       {selectedAppt.status === 'pending' && (
                         <>
                           <button onClick={() => handleApptAction(selectedAppt._id?.toString(), 'confirmed')}
                             className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all">
-                            ✓ Confirm
+                            <Check size={14} className="inline mr-1" /> Confirm
                           </button>
                           <button onClick={() => handleApptAction(selectedAppt._id?.toString(), 'cancelled')}
                             className="px-3 py-1.5 rounded-lg bg-red-600/30 hover:bg-red-600 border border-red-500/40 text-red-300 hover:text-white text-xs font-semibold transition-all">
-                            ✕ Cancel
+                            <X size={14} className="inline mr-1" /> Cancel
                           </button>
                         </>
                       )}
                       {selectedAppt.status === 'confirmed' && (
                         <button onClick={() => handleApptAction(selectedAppt._id?.toString(), 'completed')}
                           className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all">
-                          ✓ Mark Complete
+                          <Check size={14} className="inline mr-1" /> Mark Complete
                         </button>
                       )}
                     </div>
@@ -393,17 +400,17 @@ export default function DoctorDashboard() {
                       className="w-full bg-white/4 border border-white/10 rounded-xl px-3.5 py-3 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 resize-none transition-all" />
                     <div className="flex items-center justify-between mt-2">
                       <button onClick={handleSaveNotes}
-                        className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all">
-                        💾 Save Notes
+                        className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all flex items-center gap-1.5">
+                        <Save size={14} /> Save Notes
                       </button>
-                      {notesSaved && <span className="text-emerald-400 text-xs font-mono">✓ Saved</span>}
+                      {notesSaved && <span className="text-emerald-400 text-xs font-mono flex items-center gap-1"><Check size={12} /> Saved</span>}
                     </div>
                   </div>
                 </div>
               </motion.div>
             ) : (
               <div className="flex flex-col items-center justify-center h-64 border border-white/6 bg-white/3 rounded-2xl text-slate-500">
-                <span className="text-4xl mb-3">👆</span>
+                <MousePointerClick size={48} className="mb-3 text-slate-500" />
                 <p className="text-sm">{activeTab === 'appointments' ? 'Select an appointment to review' : 'Triage cases shown on the left'}</p>
               </div>
             )}

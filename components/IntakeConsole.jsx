@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Siren, Mic, Send } from 'lucide-react';
+import { Siren, Mic } from 'lucide-react';
 
 const LANGUAGES = [
   { code: 'hi',  label: 'हिंदी',       name: 'Hindi' },
@@ -30,14 +30,13 @@ function detectLocalEmergency(text) {
   return EMERGENCY_WORDS.some((w) => lower.includes(w));
 }
 
-export default function IntakeConsole({ onSubmit, isProcessing, onSendChat }) {
-  const [narrative, setNarrative]       = useState('');
-  const [language, setLanguage]         = useState('hi');
-  const [isListening, setIsListening]   = useState(false);
+export default function IntakeConsole({ onSubmit, isProcessing }) {
+  const [narrative, setNarrative]           = useState('');
+  const [language, setLanguage]             = useState('hi');
+  const [isListening, setIsListening]       = useState(false);
   const [showBiometrics, setShowBiometrics] = useState(false);
-  const [biometrics, setBiometrics]     = useState({ spo2: '', bpm: '', bpSystolic: '', bpDiastolic: '', temperature: '' });
+  const [biometrics, setBiometrics]         = useState({ spo2: '', bpm: '', bpSystolic: '', bpDiastolic: '', temperature: '' });
   const [emergencyFlash, setEmergencyFlash] = useState(false);
-  const [chatInput, setChatInput]       = useState('');
   const recognitionRef = useRef(null);
 
   const isEmergency = detectLocalEmergency(narrative);
@@ -99,30 +98,11 @@ export default function IntakeConsole({ onSubmit, isProcessing, onSendChat }) {
     setIsListening(true);
   }
 
-  const inputCls = 'w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-slate-200 text-[12px] placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-white/8 transition-all font-mono';
+  const inputCls = 'w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-slate-200 text-[12px] placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 transition-all font-mono';
 
   return (
     <div className="intake-form-wrapper">
 
-      {/* Unified chat input row */}
-      {onSendChat && (
-        <form onSubmit={(e) => { e.preventDefault(); if (!chatInput.trim()) return; onSendChat(chatInput.trim()); setChatInput(''); }} className="chat-input-row">
-          <input
-            id="chat-comment-input"
-            type="text"
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            placeholder="Ask a health question..."
-            className="chat-input"
-          />
-          <button type="submit" disabled={!chatInput.trim()} className="chat-send-btn" id="chat-send-btn">
-            <Send size={15} />
-          </button>
-        </form>
-      )}
-
-      {/* Triage section label */}
-      <div className="triage-section-label">Symptom Triage</div>
       {/* Emergency flash banner */}
       <AnimatePresence>
         {emergencyFlash && (

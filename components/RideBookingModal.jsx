@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Phone, MapPin, Star, Shield, Clock, ChevronRight,
   CheckCircle, XCircle, Navigation, AlertTriangle, Activity,
-  Ambulance, Heart, Zap
+  Ambulance, Heart, Zap, Siren, Helicopter
 } from 'lucide-react';
 
 /* ─── Mock Data ───────────────────────────────────────────────────── */
@@ -14,7 +14,7 @@ const AMBULANCE_TIERS = [
     id: 'bls',
     label: 'Basic Life Support',
     short: 'BLS',
-    icon: '🚑',
+    icon: Ambulance,
     desc: 'First responder, basic equipment',
     price: 650,
     eta: '4–6 min',
@@ -26,7 +26,7 @@ const AMBULANCE_TIERS = [
     id: 'als',
     label: 'Advanced Life Support',
     short: 'ALS',
-    icon: '🚨',
+    icon: Siren,
     desc: 'Paramedic + advanced equipment',
     price: 1350,
     eta: '6–10 min',
@@ -38,7 +38,7 @@ const AMBULANCE_TIERS = [
     id: 'air',
     label: 'Air Ambulance',
     short: 'AIR',
-    icon: '🚁',
+    icon: Helicopter,
     desc: 'Helicopter + full trauma team',
     price: 12500,
     eta: '15–25 min',
@@ -315,7 +315,7 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
                       style={{ borderColor: t.borderColor, background: `${t.color}08` }}
                     >
                       <div className="flex items-start gap-3">
-                        <span className="text-2xl">{t.icon}</span>
+                        <div className="text-2xl"><t.icon size={24} color={t.color} /></div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <p className="font-display text-[14px] font-bold text-white">{t.label}</p>
@@ -353,7 +353,7 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
                       animate={{ scale: [1, 1.3, 1], opacity: [1, 0, 1] }}
                       transition={{ duration: 1.5, repeat: Infinity }}
                     />
-                    <span className="text-4xl">{tier.icon}</span>
+                    <tier.icon size={36} color={tier.color} />
                   </div>
                   <div className="text-center">
                     <p className="font-display text-[16px] font-bold text-white">Connecting to Driver</p>
@@ -420,7 +420,7 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
                     {/* Vehicle & badges */}
                     <div className="flex flex-wrap gap-2 mb-4">
                       <span className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1 text-[11px] font-mono text-slate-300">
-                        🚑 {driver.vehicle}
+                        <Ambulance size={12} /> {driver.vehicle}
                       </span>
                       <span className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1 text-[11px] font-mono text-slate-400">
                         {driver.model}
@@ -493,9 +493,9 @@ export default function RideBookingModal({ isOpen, onClose, patientLocation = nu
                   {/* Big ETA timer */}
                   <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 p-5 text-center">
                     <p className="font-mono text-[11px] text-emerald-400 uppercase tracking-wider mb-2">
-                      {rideStatus === 'heading' || rideStatus === 'accepted' ? '🚑 Ambulance En Route' :
-                       rideStatus === 'arrived' ? '📍 Ambulance Arrived' :
-                       rideStatus === 'transporting' ? '⚡ Transporting to ER' : '✅ Completed'}
+                      {rideStatus === 'heading' || rideStatus === 'accepted' ? <><Ambulance size={14} className="inline mr-1" /> Ambulance En Route</> :
+                       rideStatus === 'arrived' ? <><MapPin size={14} className="inline mr-1" /> Ambulance Arrived</> :
+                       rideStatus === 'transporting' ? <><Zap size={14} className="inline mr-1" /> Transporting to ER</> : <><CheckCircle size={14} className="inline mr-1" /> Completed</>}
                     </p>
                     {(rideStatus === 'heading' || rideStatus === 'accepted') ? (
                       <>

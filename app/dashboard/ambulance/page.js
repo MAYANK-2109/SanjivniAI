@@ -4,7 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStoredUser, clearStoredUser } from '@/lib/auth';
+import { getStoredTheme, applyTheme } from '@/lib/theme';
 import DriverRideManager from '@/components/DriverRideManager';
+import { Ambulance, MapPin, Zap, CheckCircle2, Map, Radio, Bell, Phone } from 'lucide-react';
 
 // Live OpenStreetMap component using Leaflet (loaded dynamically)
 function LiveMap({ patientLocation, destination }) {
@@ -41,7 +43,7 @@ function LiveMap({ patientLocation, destination }) {
 
         // Ambulance marker
         const ambIcon = L.divIcon({
-          html: '<div style="font-size:26px;filter:drop-shadow(0 2px 6px rgba(239,68,68,0.8))">🚑</div>',
+          html: '<div style="color:#ef4444; filter:drop-shadow(0 2px 6px rgba(239,68,68,0.8))"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10H6"/><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.28a1 1 0 0 0-.684-.948l-1.923-.641a1 1 0 0 1-.578-.502l-1.539-3.076A1 1 0 0 0 16.384 8H14"/><circle cx="8" cy="19" r="2"/><circle cx="17" cy="19" r="2"/></svg></div>',
           className: '',
           iconSize: [30, 30],
           iconAnchor: [15, 15],
@@ -49,17 +51,17 @@ function LiveMap({ patientLocation, destination }) {
 
         // Hospital marker
         const hospIcon = L.divIcon({
-          html: '<div style="font-size:24px;filter:drop-shadow(0 2px 6px rgba(16,185,129,0.8))">🏥</div>',
+          html: '<div style="color:#10b981; filter:drop-shadow(0 2px 6px rgba(16,185,129,0.8))"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 10h8"/><path d="M12 6v8"/></svg></div>',
           className: '',
           iconSize: [30, 30],
           iconAnchor: [15, 15],
         });
 
-        const ambMarker = L.marker(center, { icon: ambIcon }).addTo(map).bindPopup('🚑 Your Ambulance').openPopup();
+        const ambMarker = L.marker(center, { icon: ambIcon }).addTo(map).bindPopup('Your Ambulance').openPopup();
 
         // Target destination (default ~2km away if not provided)
         const destCoords = destination || [center[0] + 0.015, center[1] - 0.0025];
-        const hospMarker = L.marker(destCoords, { icon: hospIcon }).addTo(map).bindPopup('🏥 Destination ER');
+        const hospMarker = L.marker(destCoords, { icon: hospIcon }).addTo(map).bindPopup('Destination ER');
 
         // Draw static route line between ambulance and destination
         L.polyline([center, destCoords], {
@@ -87,7 +89,7 @@ function LiveMap({ patientLocation, destination }) {
   if (mapError) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-slate-500 bg-[#08090d] rounded-xl">
-        <span className="text-3xl mb-2">🗺️</span>
+        <Map size={36} className="mb-2 text-slate-500" />
         <p className="text-sm">Map unavailable</p>
         <p className="text-xs mt-1">Check network connection</p>
       </div>
@@ -119,16 +121,18 @@ export default function AmbulanceDashboard() {
   const [mapKey, setMapKey] = useState(0);
 
   const STATUS_STEPS = [
-    { key: 'heading',     label: 'En Route to Patient',  icon: '🚑', color: 'text-amber-400',   action: "Mark Arrived at Patient" },
-    { key: 'arrived',     label: 'At Patient Location',  icon: '📍', color: 'text-blue-400',    action: 'Start Transport to Hospital' },
-    { key: 'transporting',label: 'Transporting to ER',   icon: '⚡', color: 'text-red-400',     action: 'Mark Arrived at ER' },
-    { key: 'completed',   label: 'Case Completed',        icon: '✅', color: 'text-emerald-400', action: null },
+    { key: 'heading',     label: 'En Route to Patient',  icon: <Ambulance size={14} />, color: 'text-amber-400',   action: "Mark Arrived at Patient" },
+    { key: 'arrived',     label: 'At Patient Location',  icon: <MapPin size={14} />, color: 'text-blue-400',    action: 'Start Transport to Hospital' },
+    { key: 'transporting',label: 'Transporting to ER',   icon: <Zap size={14} />, color: 'text-red-400',     action: 'Mark Arrived at ER' },
+    { key: 'completed',   label: 'Case Completed',        icon: <CheckCircle2 size={14} />, color: 'text-emerald-400', action: null },
   ];
 
   const currentStep = STATUS_STEPS.find(s => s.key === callStatus) || STATUS_STEPS[0];
   const stepIdx = STATUS_STEPS.findIndex(s => s.key === callStatus);
 
   useEffect(() => {
+    // Restore theme from localStorage on every page load
+    applyTheme(getStoredTheme());
     const stored = getStoredUser();
     if (!stored || stored.role !== 'ambulance') { window.location.href = '/'; return; }
     setUser(stored);
@@ -224,7 +228,7 @@ export default function AmbulanceDashboard() {
       <header className="relative z-30 border-b border-white/8 bg-[#07080c]/90 backdrop-blur-xl sticky top-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="h-8 w-8 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center shrink-0">🚑</div>
+            <div className="h-8 w-8 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center shrink-0 text-red-400"><Ambulance size={18} /></div>
             <div className="hidden sm:block">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-sm text-slate-100">SANJEEVANI</span>
@@ -263,7 +267,7 @@ export default function AmbulanceDashboard() {
             /* ── Idle state ── */
             <div className="flex flex-col items-center justify-center h-72 border border-white/6 bg-white/3 rounded-2xl text-slate-500 space-y-3">
               <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }}>
-                <span className="text-5xl">📡</span>
+                <Radio size={48} className="text-slate-500" />
               </motion.div>
               <div className="text-center">
                 <p className="font-semibold text-slate-300">Awaiting Dispatch</p>
@@ -357,11 +361,11 @@ export default function AmbulanceDashboard() {
                     )}
                     <button onClick={handleSendAlert}
                       className={`py-2.5 px-4 rounded-xl text-sm font-semibold transition-all border flex items-center gap-2 ${erAlertSent ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-red-600 hover:bg-red-500 text-white border-transparent shadow-lg shadow-red-900/20'}`}>
-                      🔔 {erAlertSent ? 'Alert Sent!' : 'Alert ER'}
+                      <Bell size={16} /> {erAlertSent ? 'Alert Sent!' : 'Alert ER'}
                     </button>
                     <button onClick={handleCallER}
                       className="py-2.5 px-4 rounded-xl bg-white/8 hover:bg-white/12 border border-white/15 text-slate-200 text-sm font-semibold transition-all flex items-center gap-2">
-                      📞 Call ER
+                      <Phone size={16} /> Call ER
                     </button>
                   </div>
                 </div>
@@ -371,7 +375,7 @@ export default function AmbulanceDashboard() {
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                 className="rounded-2xl bg-[#0d0f16] border border-white/8 overflow-hidden shadow-xl">
                 <div className="px-5 py-3.5 border-b border-white/6 flex items-center justify-between">
-                  <h3 className="font-semibold text-sm text-slate-200 flex items-center gap-2">🗺️ Live GPS Tracking</h3>
+                  <h3 className="font-semibold text-sm text-slate-200 flex items-center gap-2"><Map size={16} /> Live GPS Tracking</h3>
                   <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-lg flex items-center gap-1">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> OpenStreetMap Live
                   </span>
@@ -444,7 +448,7 @@ export default function AmbulanceDashboard() {
               ].map(({ label, number, color }) => (
                 <button key={label} onClick={() => window.open(`tel:${number}`, '_self')}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-white text-xs font-semibold transition-all ${color}`}>
-                  <span>📞 {label}</span>
+                  <span className="flex items-center gap-1.5"><Phone size={14} /> {label}</span>
                   <span className="font-mono text-[11px] opacity-80">{number}</span>
                 </button>
               ))}
