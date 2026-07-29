@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Siren, Mic } from 'lucide-react';
+import { Siren, Mic, Send } from 'lucide-react';
 
 const LANGUAGES = [
   { code: 'hi',  label: 'हिंदी',       name: 'Hindi' },
@@ -30,13 +30,14 @@ function detectLocalEmergency(text) {
   return EMERGENCY_WORDS.some((w) => lower.includes(w));
 }
 
-export default function IntakeConsole({ onSubmit, isProcessing }) {
+export default function IntakeConsole({ onSubmit, isProcessing, onSendChat }) {
   const [narrative, setNarrative]       = useState('');
   const [language, setLanguage]         = useState('hi');
   const [isListening, setIsListening]   = useState(false);
   const [showBiometrics, setShowBiometrics] = useState(false);
   const [biometrics, setBiometrics]     = useState({ spo2: '', bpm: '', bpSystolic: '', bpDiastolic: '', temperature: '' });
   const [emergencyFlash, setEmergencyFlash] = useState(false);
+  const [chatInput, setChatInput]       = useState('');
   const recognitionRef = useRef(null);
 
   const isEmergency = detectLocalEmergency(narrative);
@@ -103,6 +104,25 @@ export default function IntakeConsole({ onSubmit, isProcessing }) {
   return (
     <div className="intake-form-wrapper">
 
+      {/* Unified chat input row */}
+      {onSendChat && (
+        <form onSubmit={(e) => { e.preventDefault(); if (!chatInput.trim()) return; onSendChat(chatInput.trim()); setChatInput(''); }} className="chat-input-row">
+          <input
+            id="chat-comment-input"
+            type="text"
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            placeholder="Ask a health question..."
+            className="chat-input"
+          />
+          <button type="submit" disabled={!chatInput.trim()} className="chat-send-btn" id="chat-send-btn">
+            <Send size={15} />
+          </button>
+        </form>
+      )}
+
+      {/* Triage section label */}
+      <div className="triage-section-label">Symptom Triage</div>
       {/* Emergency flash banner */}
       <AnimatePresence>
         {emergencyFlash && (

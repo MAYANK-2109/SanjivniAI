@@ -15,58 +15,64 @@ function QuickBookModal({ doctor, onClose }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await fetch('/api/appointments', {
+      const res = await fetch('/api/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, doctorId: doctor.id, doctorName: doctor.name, role: 'doctor' }),
       });
-      setDone(true);
-      setTimeout(onClose, 2200);
+      const data = await res.json();
+      if (data.success || res.ok) {
+        setDone(true);
+        setTimeout(onClose, 2200);
+      } else {
+        setSubmitting(false);
+      }
     } catch { setSubmitting(false); }
   }
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.7)',backdropFilter:'blur(6px)'}} onClick={onClose}>
       <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="w-full max-w-sm bg-[#0d0f16] border border-blue-500/25 rounded-2xl shadow-2xl overflow-hidden"
+        className="book-modal-box"
         onClick={e => e.stopPropagation()}>
-        <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-cyan-500" />
+        <div className="h-1 w-full" style={{background:'linear-gradient(90deg,#3B82F6,#06B6D4)'}} />
         <div className="p-5">
           {done ? (
             <div className="text-center py-6">
               <div className="text-4xl mb-3">✅</div>
-              <p className="font-semibold text-slate-100">Appointment Requested!</p>
-              <p className="text-sm text-slate-400 mt-1">Sent to Dr. {doctor.name}</p>
+              <p className="book-modal-done-title">Appointment Requested!</p>
+              <p className="book-modal-done-sub">Sent to Dr. {doctor.name}</p>
             </div>
           ) : (
             <>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="font-bold text-slate-100">{doctor.name}</p>
-                  <p className="text-xs text-blue-400">{doctor.spec}</p>
+                  <p className="book-modal-doc-name">{doctor.name}</p>
+                  <p className="book-modal-doc-spec">{doctor.spec}</p>
                 </div>
-                <button onClick={onClose} className="h-7 w-7 rounded-full bg-white/5 border border-white/10 text-slate-400 hover:text-white flex items-center justify-center"><X size={14} /></button>
+                <button onClick={onClose} className="book-modal-close"><X size={14} /></button>
               </div>
               <form onSubmit={handleSubmit} className="space-y-3">
                 <input required value={form.patientName} onChange={e => setForm(p=>({...p,patientName:e.target.value}))}
-                  placeholder="Your full name *" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-all" />
+                  placeholder="Your full name *" className="book-modal-input" />
                 <input required value={form.phone} onChange={e => setForm(p=>({...p,phone:e.target.value}))}
-                  placeholder="Phone number *" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-all" />
+                  placeholder="Phone number *" className="book-modal-input" />
                 <div className="grid grid-cols-2 gap-2">
                   <input required type="date" value={form.date} min={new Date().toISOString().split('T')[0]}
                     onChange={e => setForm(p=>({...p,date:e.target.value}))}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500/50 transition-all" />
+                    className="book-modal-input" />
                   <select required value={form.time} onChange={e => setForm(p=>({...p,time:e.target.value}))}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500/50 transition-all">
+                    className="book-modal-input">
                     <option value="">Time slot</option>
                     {times.map(t => <option key={t}>{t}</option>)}
                   </select>
                 </div>
                 <textarea required value={form.symptoms} onChange={e => setForm(p=>({...p,symptoms:e.target.value}))}
                   placeholder="Brief symptom description *" rows={2}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-all resize-none" />
+                  className="book-modal-input resize-none" />
                 <button type="submit" disabled={submitting}
-                  className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white font-semibold text-sm transition-all">
+                  className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all text-white disabled:opacity-60"
+                  style={{background:'#2563EB'}}>
                   {submitting ? 'Booking...' : '📅 Book Appointment'}
                 </button>
               </form>
