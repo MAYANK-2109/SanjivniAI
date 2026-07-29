@@ -92,4 +92,4 @@ Contributions, issues, and feature requests are welcome! Feel free to check the 
 
 ## 📄 License
 
-This project is private and intended for specific use cases. All rights reserved.
+This project is private and intended for specific use cases. All rights reserved!
